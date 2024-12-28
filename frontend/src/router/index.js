@@ -6,6 +6,7 @@ import AccountType from '@/views/AccountType.vue'
 import JobListings from '@/views/JobListings.vue'
 import JobDetails from '@/views/JobDetails.vue'
 import Dashboard from '@/views/Dashboard.vue'
+import ApplicationForm from '@/views/ApplicationForm.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -45,7 +46,12 @@ const router = createRouter({
       name: 'JobDetails',
       component: JobDetails,
       props: true
-    }
+    },
+    {
+      path: '/apply',
+      name: 'ApplicationForm',
+      component: ApplicationForm
+  }
   ],
 })
 

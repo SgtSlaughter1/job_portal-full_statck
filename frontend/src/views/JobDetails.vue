@@ -62,7 +62,7 @@
                                 <p><strong>Experience Level:</strong> {{ job.experienceLevel }}</p>
                                 <p><strong>Posted Date:</strong> {{ job.postedDate }}</p>
                             </div>
-                            <BaseButton class="w-100 mb-2">Apply Now</BaseButton>
+                            <BaseButton @click="applyNow" class="w-100 mb-2">Apply Now</BaseButton>
                             <BaseButton @click="$router.push('/jobs')" variant="outline" class="w-100">
                                 Back to Jobs
                             </BaseButton>
@@ -100,6 +100,14 @@ export default {
         this.job = this.jobStore.getJobById(this.id);
     }, 
     methods: {
+        applyNow() {
+            const isLoggedIn = !!localStorage.getItem('username'); // Check if user is logged in
+            if (isLoggedIn) {
+                this.$router.push({ path: '/apply', query: { jobId: this.id } }); // Navigate to application form
+            } else {
+                this.$router.push('/login'); // Redirect to login page
+            }
+        },
         scrollToTop() {
             window.scrollTo(0, 0);
         }
