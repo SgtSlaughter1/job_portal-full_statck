@@ -2,99 +2,148 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Jobs;
+use App\Http\Controllers\Controller;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use App\Models\Job;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
-/**
- * Class JobsController
- *
- * This controller handles CRUD operations for job listings.
- * It provides methods to list, create, update, and delete jobs.
- */
-class JobsController extends Controller
-{
+class JobsController extends Controller{
+    use AuthorizesRequests;
 
     /**
-     * Display a listing of the jobs.
+    /**
+     * Display a listing of the resource.
      */
     public function index()
     {
-        return response()->json(Jobs::latest('postedDate')->get());
+        $jobs = Job::with('employer')
+            ->where('is_active', true)
+            ->where('deadline', '>=', now())
+            ->latest()
+            ->paginate(10);
+
+        return response()->json([
+            'data' => $jobs->items(),
+            'total' => $jobs->total(),
+            'per_page' => $jobs->perPage(),
+            'current_page' => $jobs->currentPage(),
+            'last_page' => $jobs->lastPage()
+        ]);
     }
 
     /**
-     * Display the specified job.
+     * Store a newly created resource in storage.
      */
-    public function show($id)
-    {
-        $job = Jobs::findOrFail($id);
-        return response()->json($job);
-    }
-
-
-    /**
-     * Store a newly created job in storage.
-     */
-
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'jobTitle' => 'required|string|max:255',
-            'company' => 'required|string|max:255',
-            'location' => 'required|string|max:255',
-            'pay' => 'required|string|max:255',
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
             'description' => 'required|string',
+            'location' => 'required|string',
+            'type' => 'required|string|in:full-time,part-time,contract',
+            'salary' => 'nullable|numeric',
+            'experience_level' => 'required|string',
             'requirements' => 'required|array',
             'responsibilities' => 'required|array',
-            'employmentType' => 'required|string|max:255',
-            'experienceLevel' => 'required|string|max:255',
-            'postedDate' => 'required|date'
+            'deadline' => 'required|date|after:today',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
+        $job = $request->user()->jobs()->create($validated);
 
-        $job = Jobs::create($request->all());
-        return response()->json($job, 201);
+        return response()->json([
+            'data' => $job
+        ], 201);
     }
 
     /**
-     * Update the specified job in storage.
+     * Display the specified resource.
      */
-    public function update(Request $request, $id)
+    public function show(Job $job)
     {
-        $job = Jobs::findOrFail($id);
-
-        $validator = Validator::make($request->all(), [
-            'jobTitle' => 'string|max:255',
-            'company' => 'string|max:255',
-            'location' => 'string|max:255',
-            'pay' => 'string|max:255',
-            'description' => 'string',
-            'requirements' => 'array',
-            'responsibilities' => 'array',
-            'employmentType' => 'string|max:255',
-            'experienceLevel' => 'string|max:255',
-            'postedDate' => 'date'
+        return response()->json([
+            'data' => $job->load('employer')
         ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $job->update($request->all());
-        return response()->json($job);
     }
 
     /**
-     * Delete the specified job from storage.
+     * Update the specified resource in storage.
      */
-    public function destroy($id)
+    public function update(Request $request, Job $job)
     {
-        $job = Jobs::findOrFail($id);
+        $this->authorize('update', $job);
+
+        $validated = $request->validate([
+            'title' => 'sometimes|string|max:255',
+            'description' => 'sometimes|string',
+            'location' => 'sometimes|string',
+            'type' => 'sometimes|string|in:full-time,part-time,contract',
+            'salary' => 'nullable|numeric',
+            'experience_level' => 'sometimes|string',
+            'requirements' => 'sometimes|array',
+            'responsibilities' => 'sometimes|array',
+            'deadline' => 'sometimes|date|after:today',
+            'is_active' => 'sometimes|boolean',
+            'is_featured' => 'sometimes|boolean',
+        ]);
+
+        $job->update($validated);
+
+        return response()->json([
+            'data' => $job
+        ]);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Job $job)
+    {
+        $this->authorize('delete', $job);
+
         $job->delete();
+
         return response()->json(null, 204);
+    }
+
+    /**
+     * Search for jobs based on keyword, location, type, and experience level.
+     */
+    public function search(Request $request)
+    {
+        $query = Job::with('employer')->where('is_active', true);
+
+        if ($request->has('keyword')) {
+            $keyword = $request->keyword;
+            $query->where(function($q) use ($keyword) {
+                $q->where('title', 'like', "%{$keyword}%")
+                  ->orWhere('description', 'like', "%{$keyword}%");
+            });
+        }
+
+        if ($request->has('location')) {
+            $query->where('location', 'like', "%{$request->location}%");
+        }
+
+        if ($request->has('type')) {
+            $query->where('type', $request->type);
+        }
+
+        if ($request->has('experience_level')) {
+            $query->where('experience_level', $request->experience_level);
+        }
+
+        if ($request->has('featured')) {
+            $query->where('is_featured', true);
+        }
+
+        $jobs = $query->latest()->paginate(10);
+
+        return response()->json([
+            'data' => $jobs->items(),
+            'total' => $jobs->total(),
+            'per_page' => $jobs->perPage(),
+            'current_page' => $jobs->currentPage(),
+            'last_page' => $jobs->lastPage()
+        ]);
     }
 }

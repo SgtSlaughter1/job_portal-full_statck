@@ -1,7 +1,7 @@
 <?php
 namespace Database\Factories;
 
-use App\Models\Jobs;
+use App\Models\Job;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -11,9 +11,9 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  * It is used for testing and seeding the database.
  */
 
-class JobsFactory extends Factory
+class JobFactory extends Factory
 {
-    protected $model = Jobs::class;
+    protected $model = Job::class;
 
     public function definition()
     {

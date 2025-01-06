@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\Jobs;
+use App\Models\Job;
 use Illuminate\Database\Seeder;
 
-class JobsSeeder extends Seeder
+class JobSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -14,6 +14,6 @@ class JobsSeeder extends Seeder
      */
     public function run()
     {
-        Jobs::factory()->count(50)->create();
+        Job::factory()->count(50)->create();
     }
 }
