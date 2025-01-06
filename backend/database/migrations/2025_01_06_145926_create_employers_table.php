@@ -13,6 +13,17 @@ return new class extends Migration
     {
         Schema::create('employers', function (Blueprint $table) {
             $table->id();
+            $table->string('company_name');
+            $table->string('email')->unique();
+            $table->string('password');
+            $table->string('phone')->nullable();
+            $table->text('company_description');
+            $table->string('website')->nullable();
+            $table->string('industry');
+            $table->string('location');
+            $table->string('logo_url')->nullable();
+            $table->boolean('is_verified')->default(false);
+            $table->rememberToken();
             $table->timestamps();
         });
     }

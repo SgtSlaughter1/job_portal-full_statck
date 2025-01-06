@@ -13,18 +13,18 @@ return new class extends Migration
     {
         Schema::create('jobs', function (Blueprint $table) {
             $table->id();
-            $table->string('jobTitle');
-            $table->string('company');
-            $table->string('location');
-            $table->string('pay');
+            $table->foreignId('employer_id')->constrained()->onDelete('cascade');
+            $table->string('title');
             $table->text('description');
+            $table->string('location');
+            $table->string('type'); // full-time, part-time, contract
+            $table->string('salary')->nullable();
+            $table->string('experience_level');
             $table->json('requirements');
             $table->json('responsibilities');
-            $table->string('employmentType');
-            $table->string('experienceLevel');
-            $table->date('postedDate');
+            $table->boolean('is_active')->default(true);
+            $table->date('deadline');
             $table->timestamps();
-
         });
     }
 
@@ -33,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('jobs');
+        Schema::dropIfExists('job_listings');
     }
 };

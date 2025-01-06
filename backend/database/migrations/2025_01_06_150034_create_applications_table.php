@@ -13,6 +13,12 @@ return new class extends Migration
     {
         Schema::create('applications', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('job_id')->references('id')->on('jobs')->onDelete('cascade');
+            $table->foreignId('job_seeker_id')->constrained()->onDelete('cascade');
+            $table->text('cover_letter')->nullable();
+            $table->string('resume_url');
+            $table->enum('status', ['pending', 'reviewed', 'shortlisted', 'rejected', 'accepted'])->default('pending');
+            $table->text('employer_notes')->nullable();
             $table->timestamps();
         });
     }
