@@ -17,13 +17,13 @@ return new class extends Migration
             $table->string('title');
             $table->text('description');
             $table->string('location');
-            $table->string('type'); // full-time, part-time, contract
-            $table->string('salary')->nullable();
+            $table->enum('type', ['full-time', 'part-time', 'contract']);
+            $table->integer('salary')->nullable();
             $table->string('experience_level');
             $table->json('requirements');
             $table->json('responsibilities');
             $table->boolean('is_active')->default(true);
-            $table->date('deadline');
+            $table->timestamp('deadline');
             $table->timestamps();
         });
     }
@@ -33,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('job_listings');
+        Schema::dropIfExists('jobs');
     }
 };

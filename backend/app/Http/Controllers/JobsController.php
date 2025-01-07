@@ -7,17 +7,16 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use App\Models\Job;
 use Illuminate\Http\Request;
 
-class JobsController extends Controller{
+class JobsController extends Controller
+{
     use AuthorizesRequests;
 
-    /**
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $jobs = Job::with('employer')
-            ->where('is_active', true)
+        $jobs = Job::where('is_active', true)
             ->where('deadline', '>=', now())
             ->latest()
             ->paginate(10);
@@ -58,10 +57,12 @@ class JobsController extends Controller{
     /**
      * Display the specified resource.
      */
-    public function show(Job $job)
+    public function show($id)
     {
+        $job = Job::findOrFail($id);
+        
         return response()->json([
-            'data' => $job->load('employer')
+            'data' => $job
         ]);
     }
 
@@ -110,7 +111,7 @@ class JobsController extends Controller{
      */
     public function search(Request $request)
     {
-        $query = Job::with('employer')->where('is_active', true);
+        $query = Job::where('is_active', true);
 
         if ($request->has('keyword')) {
             $keyword = $request->keyword;

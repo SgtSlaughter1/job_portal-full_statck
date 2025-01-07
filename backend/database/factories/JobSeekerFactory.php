@@ -2,15 +2,17 @@
 
 namespace Database\Factories;
 
+use App\Models\JobSeeker;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\JobSeeker>
  */
 class JobSeekerFactory extends Factory
 {
+    protected $model = JobSeeker::class;
+
     /**
      * Define the model's default state.
      *
@@ -18,31 +20,26 @@ class JobSeekerFactory extends Factory
      */
     public function definition(): array
     {
-        $educationLevels = ['High School', 'Bachelor\'s Degree', 'Master\'s Degree', 'PhD', 'Associate Degree'];
-        $fields = ['Computer Science', 'Business Administration', 'Engineering', 'Healthcare', 'Education', 'Marketing'];
-        $jobTitles = ['Software Engineer', 'Project Manager', 'Data Analyst', 'Marketing Specialist', 'Teacher', 'Sales Representative'];
         $skills = [
-            'JavaScript', 'Python', 'Java', 'SQL', 'React', 'Node.js', 'PHP', 'Laravel',
-            'Project Management', 'Team Leadership', 'Communication', 'Problem Solving',
-            'Marketing', 'Sales', 'Customer Service', 'Data Analysis'
+            ['PHP', 'Laravel', 'MySQL', 'Vue.js', 'Git'],
+            ['JavaScript', 'React', 'Node.js', 'MongoDB', 'AWS'],
+            ['Python', 'Django', 'PostgreSQL', 'Docker', 'Linux'],
+            ['Java', 'Spring Boot', 'Oracle', 'Angular', 'Jenkins'],
+            ['C#', '.NET Core', 'SQL Server', 'Azure', 'TypeScript']
         ];
 
         return [
-            'first_name' => fake()->firstName(),
-            'last_name' => fake()->lastName(),
+            'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
-            'password' => Hash::make('password'), // default password for testing
+            'password' => Hash::make('password123'),
             'phone' => fake()->phoneNumber(),
-            'bio' => fake()->paragraphs(2, true),
-            'resume_url' => fake()->url(),
-            'skills' => fake()->randomElements($skills, random_int(3, 8)),
-            'education_level' => fake()->randomElement($educationLevels),
-            'field_of_study' => fake()->randomElement($fields),
-            'years_of_experience' => fake()->numberBetween(0, 15),
-            'current_job_title' => fake()->randomElement($jobTitles),
-            'location' => fake()->city() . ', ' . fake()->country(),
-            'profile_picture' => fake()->imageUrl(200, 200, 'person'),
-            'remember_token' => Str::random(10),
+            'resume_url' => null,
+            'skills' => fake()->randomElement($skills),
+            'experience_years' => fake()->numberBetween(1, 15),
+            'education_level' => fake()->randomElement(['Bachelor', 'Master', 'PhD']),
+            'current_position' => fake()->jobTitle(),
+            'expected_salary' => fake()->numberBetween(50000, 150000),
+            'is_available' => true,
         ];
     }
 }

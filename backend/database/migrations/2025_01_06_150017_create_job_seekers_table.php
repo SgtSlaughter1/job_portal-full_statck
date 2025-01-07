@@ -10,8 +10,7 @@ return new class extends Migration
     {
         Schema::create('job_seekers', function (Blueprint $table) {
             $table->id();
-            $table->string('first_name');
-            $table->string('last_name');
+            $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
             $table->string('phone')->nullable();
@@ -19,11 +18,11 @@ return new class extends Migration
             $table->string('resume_url')->nullable();
             $table->json('skills')->nullable();
             $table->string('education_level');
-            $table->string('field_of_study')->nullable();
-            $table->integer('years_of_experience')->default(0);
-            $table->string('current_job_title')->nullable();
-            $table->string('location');
-            $table->string('profile_picture')->nullable();
+            $table->integer('experience_years')->default(0);
+            $table->string('current_position')->nullable();
+            $table->integer('expected_salary')->nullable();
+            $table->boolean('is_available')->default(true);
+            $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

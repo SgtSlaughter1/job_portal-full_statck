@@ -12,7 +12,7 @@ class JobSeekerSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create 20 job seekers
+        // Create 5 job seekers
         JobSeeker::factory(5)->create();
     }
 }

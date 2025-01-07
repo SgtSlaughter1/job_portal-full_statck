@@ -19,7 +19,7 @@ class EmployerFactory extends Factory
     public function definition(): array
     {
         $industries = ['Technology', 'Healthcare', 'Finance', 'Education', 'Manufacturing', 'Retail', 'Construction'];
-        
+
         return [
             'company_name' => fake()->company(),
             'email' => fake()->unique()->companyEmail(),

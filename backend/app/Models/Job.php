@@ -34,11 +34,13 @@ class Job extends Model
         'deadline' => 'datetime',
         'is_active' => 'boolean',
         'salary' => 'integer',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime'
     ];
 
+    protected $hidden = ['updated_at'];
+
     protected $appends = ['created_date', 'deadline_date'];
+
+    protected $with = ['employer'];
 
     /**
      * Get the employer that owns the job.

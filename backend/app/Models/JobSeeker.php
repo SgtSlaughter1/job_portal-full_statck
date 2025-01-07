@@ -15,8 +15,7 @@ class JobSeeker extends Authenticatable
     use Notifiable;
 
     protected $fillable = [
-        'first_name',
-        'last_name',
+        'name',
         'email',
         'password',
         'phone',
@@ -24,22 +23,24 @@ class JobSeeker extends Authenticatable
         'resume_url',
         'skills',
         'education_level',
-        'field_of_study',
-        'years_of_experience',
-        'current_job_title',
-        'location',
-        'profile_picture'
+        'experience_years',
+        'current_position',
+        'expected_salary',
+        'is_available'
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'updated_at'
     ];
 
     protected $casts = [
         'skills' => 'array',
-        'years_of_experience' => 'integer',
-        'password' => 'hashed',
+        'experience_years' => 'integer',
+        'expected_salary' => 'integer',
+        'is_available' => 'boolean',
+        'email_verified_at' => 'datetime'
     ];
 
     public function applications()
