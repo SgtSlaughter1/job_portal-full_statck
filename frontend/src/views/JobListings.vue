@@ -1,25 +1,36 @@
 <template>
-    <div class="job-listings container my-5">
-        <h2 class="text-center mb-4">Available Job Opportunities</h2>
-
-        <div class="search-box bg-white p-2 rounded-pill shadow-lg mb-4">
-            <div class="input-group align-items-center">
-                <select v-model="searchField" class="form-select border-0 w-auto">
-                    <option value="all">All Fields</option>
-                    <option value="jobTitle">Job Title</option>
-                    <option value="company">Company</option>
-                    <option value="location">Location</option>
+    <div class="container my-5">
+        <!-- Search and Filter Section -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Search jobs..." v-model="searchQuery"
+                        @input="handleSearch">
+                    <button class="btn btn-primary" type="button">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" v-model="selectedType" @change="handleSearch">
+                    <option value="">All Types</option>
+                    <option value="full-time">Full Time</option>
+                    <option value="part-time">Part Time</option>
+                    <option value="contract">Contract</option>
                 </select>
-                <input type="text" class="form-control border-0" :placeholder="getPlaceholder" v-model="search"
-                    @input="filterJobs">
-                <BaseButton class="rounded-pill px-4">
-                    Search Jobs
-                </BaseButton>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" v-model="selectedLocation" @change="handleSearch">
+                    <option value="">All Locations</option>
+                    <option v-for="location in locations" :key="location" :value="location">
+                        {{ location }}
+                    </option>
+                </select>
             </div>
         </div>
 
         <!-- Loading State -->
-        <div v-if="jobStore.isLoading" class="text-center">
+        <div v-if="jobStore.isLoading" class="text-center my-5">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
@@ -30,160 +41,193 @@
             {{ jobStore.hasError }}
         </div>
 
-        <!-- No Results -->
-        <div v-else-if="filteredJobs.length === 0" class="text-center mt-5">
+        <!-- No Jobs Found -->
+        <div v-else-if="!jobStore.getJobs.length" class="text-center my-5">
             <h3>No jobs found</h3>
             <p class="text-muted">Try adjusting your search criteria</p>
         </div>
 
-        <!-- Job Cards -->
+        <!-- Jobs List -->
         <div v-else class="row g-4">
-            <div v-for="job in filteredJobs" :key="job.jobTitle" class="col-md-6 col-lg-4">
-                <div class="card h-100 shadow-sm border-0 rounded">
+            <div v-for="job in jobStore.getJobs" :key="job.id" class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-sm">
                     <div class="card-body">
-                        <h5 class="card-title text-primary">{{ job.jobTitle }}</h5>
-                        <h6 class="card-subtitle mb-2 text-muted">{{ job.company }}</h6>
-
-                        <div class="mb-3">
-                            <span class="badge bg-info me-2">
-                                <i class="bi bi-geo-alt"></i> {{ job.location }}
-                            </span>
-                            <span class="badge bg-success mt-3">
-                                 {{ job.pay }}
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h5 class="card-title text-primary mb-0">{{ job.title }}</h5>
+                            <span :class="getJobTypeClass(job.type)" class="badge">
+                                {{ job.type }}
                             </span>
                         </div>
+                        <h6 class="text-muted mb-3">{{ job.employer?.company_name }}</h6>
 
-                        <p class="card-text">{{ job.description }}</p>
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-geo-alt me-2"></i>
+                                {{ job.location }}
+                            </div>
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-cash me-2"></i>
+                                {{ formatSalary(job.salary) }}
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-clock me-2"></i>
+                                Posted: {{ formatDate(job.created_at) }}
+                            </div>
+                        </div>
 
-                        <BaseButton @click="viewJobDetails(job)" class="w-40 btn-primary">
+                        <p class="card-text text-muted">
+                            {{ truncateText(job.description, 100) }}
+                        </p>
+                    </div>
+                    <div class="card-footer bg-white border-0 pt-0">
+                        <router-link :to="{ name: 'JobDetails', params: { id: job.id } }" class="btn btn-primary w-100">
                             View Details
-                        </BaseButton>
+                        </router-link>
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Pagination -->
+        <div v-if="jobStore.getTotalPages > 1" class="d-flex justify-content-center mt-5">
+            <nav aria-label="Page navigation">
+                <ul class="pagination">
+                    <li class="page-item" :class="{ disabled: jobStore.getCurrentPage === 1 }">
+                        <a class="page-link" href="#" @click.prevent="changePage(jobStore.getCurrentPage - 1)">
+                            Previous
+                        </a>
+                    </li>
+                    <li v-for="page in jobStore.getTotalPages" :key="page" class="page-item"
+                        :class="{ active: page === jobStore.getCurrentPage }">
+                        <a class="page-link" href="#" @click.prevent="changePage(page)">
+                            {{ page }}
+                        </a>
+                    </li>
+                    <li class="page-item" :class="{ disabled: jobStore.getCurrentPage === jobStore.getTotalPages }">
+                        <a class="page-link" href="#" @click.prevent="changePage(jobStore.getCurrentPage + 1)">
+                            Next
+                        </a>
+                    </li>
+                </ul>
+            </nav>
         </div>
     </div>
 </template>
 
 <script>
-import { useJobStore } from '@/stores/jobs'
-import BaseButton from '@/components/BaseButton.vue'
+import { useJobStore } from '@/stores/jobs';
 
 export default {
     name: 'JobListings',
 
-    components: {
-        BaseButton
-    },
-
     data() {
         return {
             jobStore: useJobStore(),
-            search: '',
-            searchField: 'all'
-        }
-    },
-
-    created() {
-        this.jobStore.fetchJobs()
+            searchQuery: '',
+            selectedType: '',
+            selectedLocation: '',
+            searchTimeout: null
+        };
     },
 
     computed: {
-        filteredJobs() {
-            if (!this.search) return this.jobStore.getJobs;
-
-            const query = this.search.toLowerCase();
-            return this.jobStore.getJobs.filter(job => {
-                if (this.searchField === 'all') {
-                    return job.jobTitle.toLowerCase().includes(query) ||
-                        job.location.toLowerCase().includes(query) ||
-                        job.company.toLowerCase().includes(query);
-                }
-                return job[this.searchField].toLowerCase().includes(query);
-            });
-        },
-        getPlaceholder() {
-            switch (this.searchField) {
-                case 'jobTitle':
-                    return 'Search by job title...';
-                case 'company':
-                    return 'Search by company name...';
-                case 'location':
-                    return 'Search by location...';
-                default:
-                    return 'Search jobs by title, company, or location...';
-            }
+        locations() {
+            const uniqueLocations = new Set(this.jobStore.getJobs.map(job => job.location));
+            return Array.from(uniqueLocations);
         }
     },
 
     methods: {
-        viewJobDetails(job) {
-            this.$router.push(`/jobs/${job.id}`);
+        getJobTypeClass(type) {
+            const classes = {
+                'full-time': 'bg-success',
+                'part-time': 'bg-info',
+                'contract': 'bg-warning'
+            };
+            return classes[type.toLowerCase()] || 'bg-secondary';
         },
 
-        scrollToTop() {
-            window.scrollTo(0, 0);
+        formatSalary(salary) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                maximumFractionDigits: 0
+            }).format(salary);
+        },
+
+        formatDate(date) {
+            return new Date(date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        },
+
+        truncateText(text, length) {
+            if (!text) return '';
+            return text.length > length ? text.substring(0, length) + '...' : text;
+        },
+
+        // Debounced search implementation
+        handleSearch() {
+            // Clear any existing timeout
+            if (this.searchTimeout) {
+                clearTimeout(this.searchTimeout);
+            }
+
+            // Set a new timeout
+            this.searchTimeout = setTimeout(async () => {
+                await this.jobStore.fetchJobs(1, {
+                    search: this.searchQuery,
+                    type: this.selectedType,
+                    location: this.selectedLocation
+                });
+            }, 300); // Wait 300ms after last input before searching
+        },
+
+        async changePage(page) {
+            if (page < 1 || page > this.jobStore.getTotalPages) return;
+            await this.jobStore.fetchJobs(page, {
+                search: this.searchQuery,
+                type: this.selectedType,
+                location: this.selectedLocation
+            });
         }
     },
-    
-    mounted() {
-        this.scrollToTop();
+
+    async mounted() {
+        await this.jobStore.fetchJobs();
     },
-}
+
+    beforeUnmount() {
+        // Clear any existing timeout when component is destroyed
+        if (this.searchTimeout) {
+            clearTimeout(this.searchTimeout);
+        }
+    }
+};
 </script>
 
 <style scoped>
-.search-box {
-    max-width: 100%;
-    margin: 20px auto;
-}
-
-.search-box .form-control:focus {
-    box-shadow: none;
-    border-color: #007bff;
-}
-
-.search-box .form-select {
-    max-width: 150px;
-    margin-right: 10px;
-}
-
-.search-box .form-select:focus {
-    box-shadow: none;
-    border-color: #007bff;
+.badge {
+    font-size: 0.8rem;
+    padding: 0.5em 1em;
 }
 
 .card {
-    transition: transform 0.2s ease-in-out;
-    border-radius: 10px;
+    transition: transform 0.2s;
 }
 
 .card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
-.badge {
-    font-size: 0.9rem;
-    padding: 0.5em 0.8em;
+.page-link {
+    color: var(--bs-primary);
 }
 
-.card-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-}
-
-.card-subtitle {
-    font-size: 1rem;
-}
-
-.btn-primary {
-    background-color: #007bff;
-    border-color: #007bff;
-}
-
-.btn-primary:hover {
-    background-color: #0056b3;
-    border-color: #0056b3;
+.page-item.active .page-link {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
 }
 </style>

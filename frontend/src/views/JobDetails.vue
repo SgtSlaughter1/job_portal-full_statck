@@ -75,6 +75,8 @@
 </template>
 
 <script>
+import { computed, onMounted, onBeforeUnmount } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useJobStore } from '@/stores/jobs';
 import BaseButton from '@/components/BaseButton.vue';
 
@@ -85,37 +87,78 @@ export default {
     },
     props: {
         id: {
-            type: String,
+            type: [Number, String],
             required: true
         }
     },
-    data() {
-        return {
-            jobStore: useJobStore(),
-            job: null
-        }
-    },
-    created() {
-        this.jobStore.fetchJobs();
-        this.job = this.jobStore.getJobById(this.id);
-    }, 
-    methods: {
-        applyNow() {
+    setup(props) {
+        const route = useRoute();
+        const router = useRouter();
+        const jobStore = useJobStore();
+
+        const job = computed(() => jobStore.getCurrentJob);
+
+        const getJobTypeClass = (type) => {
+            const classes = {
+                'full-time': 'bg-success',
+                'part-time': 'bg-info',
+                'contract': 'bg-warning'
+            };
+            return classes[type.toLowerCase()] || 'bg-secondary';
+        };
+
+        const formatSalary = (salary) => {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                maximumFractionDigits: 0
+            }).format(salary);
+        };
+
+        const formatDate = (date) => {
+            return new Date(date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        };
+
+        const applyNow = () => {
             const isLoggedIn = !!localStorage.getItem('username'); // Check if user is logged in
             if (isLoggedIn) {
-                this.$router.push({ path: '/apply', query: { jobId: this.id } }); // Navigate to application form
+                router.push({ path: '/apply', query: { jobId: props.id } }); // Navigate to application form
             } else {
-                this.$router.push('/login'); // Redirect to login page
+                router.push('/login'); // Redirect to login page
             }
-        },
-        scrollToTop() {
-            window.scrollTo(0, 0);
-        }
-    },
-    mounted() {
-        this.scrollToTop();
-    },
-}
+        };
+
+        onMounted(async () => {
+            const jobId = props.id || route.params.id;
+            if (!jobId) {
+                router.push('/jobs');
+                return;
+            }
+            
+            await jobStore.fetchJobById(jobId);
+            if (!jobStore.getCurrentJob && !jobStore.isLoading) {
+                router.push('/jobs');
+            }
+        });
+
+        onBeforeUnmount(() => {
+            jobStore.clearCurrentJob();
+        });
+
+        return {
+            jobStore,
+            job,
+            getJobTypeClass,
+            formatSalary,
+            formatDate,
+            applyNow
+        };
+    }
+};
 </script>
 
 <style scoped>

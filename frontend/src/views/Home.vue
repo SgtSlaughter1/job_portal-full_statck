@@ -1,5 +1,7 @@
 <template>
-    <section class="hero-section py-5 bg-primary text-white">
+    <div>
+        <!-- Hero Section -->
+        <section class="hero-section py-5 bg-primary text-white">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-6 col-12">
@@ -23,49 +25,96 @@
         </div>
     </section>
 
-    <section class="job-listings my-5">
-        <h2>Featured Job Openings</h2>
-        <div class="row justify-content-center">
-            <div v-for="job in featuredJobs" :key="job.jobTitle" class="col-md-4 col-12 mb-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ job.jobTitle }}</h5>
-                        <h6 class="card-subtitle mb-2 text-muted">{{ job.company }}</h6>
-                        <div class="mb-3">
-                            <span class="badge bg-info me-2">{{ job.location }}</span>
-                            <span class="badge bg-success">{{ job.pay }}</span>
-                        </div>
-                        <p class="card-text">{{ job.description }}</p>
-                        <BaseButton @click="viewJobDetails(job)" class="w-40 btn-primary">
-                            View Details
-                        </BaseButton>
+        <!-- Featured Jobs Section -->
+        <section class="featured-jobs py-5">
+            <div class="container">
+                <h2 class="text-center mb-5">Featured Jobs</h2>
+                
+                <!-- Loading State -->
+                <div v-if="jobStore.isLoading" class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
                     </div>
                 </div>
-            </div>
-        </div>
-    </section>
-    <HowItWorks/>
 
-    <TrustedCompanies/>
+                <!-- Error State -->
+                <div v-else-if="jobStore.hasError" class="alert alert-danger" role="alert">
+                    {{ jobStore.hasError }}
+                </div>
+
+                <!-- Jobs Grid -->
+                <div v-else class="row g-4">
+                    <div v-for="job in featuredJobs" :key="job.id" class="col-md-6 col-lg-4">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h5 class="card-title text-primary mb-0">{{ job.title }}</h5>
+                                    <span :class="getJobTypeClass(job.type)" class="badge">
+                                        {{ job.type }}
+                                    </span>
+                                </div>
+                                <h6 class="text-muted mb-3">{{ job.employer?.company_name }}</h6>
+                                
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="bi bi-geo-alt me-2"></i>
+                                        {{ job.location }}
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-cash me-2"></i>
+                                        {{ formatSalary(job.salary) }}
+                                    </div>
+                                </div>
+
+                                <router-link 
+                                    :to="{ name: 'JobDetails', params: { id: job.id }}" 
+                                    class="btn btn-outline-primary w-100"
+                                >
+                                    View Details
+                                </router-link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-5">
+                    <router-link to="/jobs" class="btn btn-primary">
+                        View All Jobs
+                    </router-link>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works -->
+        <HowItWorks />
+
+        <!-- Trusted Companies -->
+        <TrustedCompanies />
+    </div>
 </template>
 
 <script>
-import BaseButton from '@/components/BaseButton.vue';
+
+import { useJobStore } from '@/stores/jobs';
 import HowItWorks from '@/components/HowItWorks.vue';
 import TrustedCompanies from '@/components/TrustedCompanies.vue';
-import { useJobStore } from '@/stores/jobs';
+import BaseButton from '@/components/BaseButton.vue';
 
 export default {
+    name: 'Home',
+    
     components: {
-        BaseButton,
-        TrustedCompanies,
         HowItWorks,
+        TrustedCompanies,
+        BaseButton
     },
+
     data() {
         return {
             jobStore: useJobStore()
-        }
+        };
     },
+
     computed: {
         featuredJobs() {
             return this.jobStore.getJobs.slice(0, 3);
@@ -73,88 +122,52 @@ export default {
     },
 
     methods: {
-        viewJobDetails(job) {
-            this.$router.push(`/jobs/${job.id}`);
+        getJobTypeClass(type) {
+            const classes = {
+                'full-time': 'bg-success',
+                'part-time': 'bg-info',
+                'contract': 'bg-warning'
+            };
+            return classes[type.toLowerCase()] || 'bg-secondary';
+        },
+
+        formatSalary(salary) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                maximumFractionDigits: 0
+            }).format(salary);
         }
     },
-    created() {
-        this.jobStore.fetchJobs();
+
+    async mounted() {
+        await this.jobStore.fetchJobs();
     }
-}
+};
 </script>
 
 <style scoped>
-.hero-section {
-    overflow: hidden;
-    background: linear-gradient(135deg, #4a90e2 0%, #2c3e50 100%);
 
-}
-
-
-.search-box {
-    max-width: 100%;
-    margin: 20px auto;
-}
-
-.search-box .form-control:focus {
-    box-shadow: none;
-    border-color: #007bff;
-}
-
-.job-listings {
-    margin: 40px 0;
-    width: 90%;
-    margin: 0 auto;
-}
-
-.job-listings h2 {
-    text-align: center;
-    margin-bottom: 30px;
-    font-size: 2.5rem;
-    color: #007bff;
-}
 
 .card {
-    margin: 15px;
-    border: none;
-    border-radius: 12px;
-    transition: transform 0.2s, box-shadow 0.2s;
-    background-color: #fff;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+    border-radius: 0.5rem;
 }
 
 .card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
-.card-body {
-    padding: 20px;
-}
-
-.card-title {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #007bff;
-}
-
-.card-text {
-    color: #555;
-    font-size: 0.9rem;
+.badge {
+    font-size: 0.8rem;
+    padding: 0.5em 1em;
 }
 
 .btn-primary {
-    background-color: #007bff;
-    border-color: #007bff;
-    padding: 10px 20px;
-    border-radius: 25px;
-    transition: background-color 0.3s;
+    padding: 0.75rem 1.5rem;
 }
 
-.btn-primary:hover {
-    background-color: #0056b3;
-    border-color: #0056b3;
-    transform: scale(1.05);
+.featured-jobs {
+    background-color: #fff;
 }
-
 </style>
