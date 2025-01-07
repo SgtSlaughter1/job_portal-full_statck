@@ -15,7 +15,6 @@ class Job extends Model
     protected $table = 'jobs';
 
     protected $fillable = [
-        'employer_id',
         'title',
         'description',
         'location',
@@ -24,18 +23,17 @@ class Job extends Model
         'experience_level',
         'requirements',
         'responsibilities',
+        'deadline',
         'is_active',
-        'is_featured',
-        'deadline'
+        'employer_id',
     ];
 
     protected $casts = [
         'requirements' => 'array',
         'responsibilities' => 'array',
+        'deadline' => 'datetime',
         'is_active' => 'boolean',
-        'is_featured' => 'boolean',
-        'deadline' => 'date',
-        'salary' => 'decimal:2',
+        'salary' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];
