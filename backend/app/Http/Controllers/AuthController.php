@@ -8,6 +8,7 @@ use App\Models\Employer;
 use App\Models\JobSeeker;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -63,34 +64,61 @@ class AuthController extends Controller
         ]);
     }
 
+
     public function jobSeekerRegister(Request $request)
     {
-        $validated = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:job_seekers',
-            'password' => 'required|string|min:8',
-            'education_level' => 'required|string',
-            'location' => 'required|string',
-        ]);
+        try {
+            // Debug the incoming request
+            Log::info('Request data:', $request->all());
 
-        $jobSeeker = JobSeeker::create([
-            'first_name' => $validated['first_name'],
-            'last_name' => $validated['last_name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'education_level' => $validated['education_level'],
-            'location' => $validated['location'],
-        ]);
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|string|email|max:255|unique:job_seekers',
+                'password' => 'required|string|min:8',
+                'education_level' => 'required|string',
+                'phone' => 'required|string',
+                'skills' => 'required|array',
+                'years_of_experience' => 'required|integer',
+                'location' => 'required|string',
+                'password_confirmation' => 'required_with:password|same:password',
+            ]);
 
-        $token = $jobSeeker->createToken('auth_token')->plainTextToken;
+            Log::info('Validated data:', $validated);
 
-        return response()->json([
-            'job_seeker' => $jobSeeker,
-            'token' => $token,
-            'token_type' => 'Bearer',
-        ], 201);
+            $jobSeeker = JobSeeker::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'education_level' => $validated['education_level'],
+                'phone' => $validated['phone'],
+                'skills' => $validated['skills'],
+                'years_of_experience' => $validated['years_of_experience'],
+                'location' => $validated['location'],
+            ]);
+
+            // Generate token for authentication
+            $token = $jobSeeker->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'job_seeker' => $jobSeeker,
+                'token' => $token,
+                'token_type' => 'Bearer',
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Registration error:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Registration failed',
+                'error' => $e->getMessage(),
+                'request_data' => $request->all(), // Add this to see what data is actually received
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
     }
+
 
     public function jobSeekerLogin(Request $request)
     {

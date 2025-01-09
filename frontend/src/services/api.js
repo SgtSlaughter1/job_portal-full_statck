@@ -73,9 +73,11 @@ export const jobsApi = {
 
 // Auth API
 export const authApi = {
-    login: (credentials) => api.post('/auth/login', credentials),
-    register: (userData) => api.post('/auth/register', userData),
-    logout: () => api.post('/auth/logout'),
+    jobSeekerLogin: (credentials) => api.post('/jobseeker/login', credentials),
+    jobSeekerRegister: (userData) => api.post('/jobseeker/register', userData),
+    employerLogin: (credentials) => api.post('/employer/login', credentials),
+    employerRegister: (userData) => api.post('/employer/register', userData),
+    logout: () => api.post('/logout'),
     getUser: () => api.get('/auth/user')
 };
 

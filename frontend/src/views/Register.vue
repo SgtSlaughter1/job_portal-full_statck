@@ -6,23 +6,9 @@
                     <div class="card-body p-4">
                         <h2 class="text-center mb-4">{{ isEmployer ? 'Create Employer Account' : 'Create Job Seeker Account' }}</h2>
                         
-                        <!-- Account Type Toggle -->
-                        <div class="btn-group w-100 mb-4" role="group">
-                            <input type="radio" class="btn-check" name="accountType" id="seeker" value="seeker" v-model="formData.role">
-                            <label class="btn btn-outline-primary" for="seeker">
-                                <i class="bi bi-person me-2"></i>Job Seeker
-                            </label>
-                            <input type="radio" class="btn-check" name="accountType" id="employer" value="employer" v-model="formData.role">
-                            <label class="btn btn-outline-primary" for="employer">
-                                <i class="bi bi-building me-2"></i>Employer
-                            </label>
-                        </div>
-
                         <!-- Error Alert -->
-                        <div v-if="errors" class="alert alert-danger">
-                            <ul class="mb-0">
-                                <li v-for="(error, field) in errors" :key="field">{{ error }}</li>
-                            </ul>
+                        <div v-if="errors?.general" class="alert alert-danger">
+                            {{ errors.general }}
                         </div>
 
                         <form @submit.prevent="handleSignup" class="needs-validation" novalidate>
@@ -44,7 +30,11 @@
                                             v-model="formData.name"
                                             :placeholder="isEmployer ? 'Enter company name' : 'Enter your full name'"
                                             required
+                                            :class="{ 'is-invalid': errors?.name }"
                                         >
+                                        <div class="invalid-feedback" v-if="errors?.name">
+                                            {{ errors.name }}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -63,7 +53,11 @@
                                             v-model="formData.email"
                                             placeholder="Enter email address"
                                             required
+                                            :class="{ 'is-invalid': errors?.email }"
                                         >
+                                        <div class="invalid-feedback" v-if="errors?.email">
+                                            {{ errors.email }}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -82,7 +76,11 @@
                                             v-model="formData.phone"
                                             placeholder="Enter phone number"
                                             required
+                                            :class="{ 'is-invalid': errors?.phone }"
                                         >
+                                        <div class="invalid-feedback" v-if="errors?.phone">
+                                            {{ errors.phone }}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -101,7 +99,11 @@
                                             id="skills" 
                                             v-model="formData.skills"
                                             placeholder="e.g., JavaScript, React, Node.js"
+                                            :class="{ 'is-invalid': errors?.skills }"
                                         >
+                                        <div class="invalid-feedback" v-if="errors?.skills">
+                                            {{ errors.skills }}
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -117,7 +119,11 @@
                                             v-model="formData.experience"
                                             min="0"
                                             placeholder="Enter years of experience"
+                                            :class="{ 'is-invalid': errors?.experience }"
                                         >
+                                        <div class="invalid-feedback" v-if="errors?.experience">
+                                            {{ errors.experience }}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -129,13 +135,16 @@
                                         <span class="input-group-text">
                                             <i class="bi bi-people"></i>
                                         </span>
-                                        <select class="form-select" id="companySize" v-model="formData.companySize">
+                                        <select class="form-select" id="companySize" v-model="formData.companySize" :class="{ 'is-invalid': errors?.companySize }">
                                             <option value="">Select company size</option>
                                             <option value="1-10">1-10 employees</option>
                                             <option value="11-50">11-50 employees</option>
                                             <option value="51-200">51-200 employees</option>
                                             <option value="201+">201+ employees</option>
                                         </select>
+                                        <div class="invalid-feedback" v-if="errors?.companySize">
+                                            {{ errors.companySize }}
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -150,7 +159,29 @@
                                             id="industry" 
                                             v-model="formData.industry"
                                             placeholder="e.g., Technology, Healthcare"
+                                            :class="{ 'is-invalid': errors?.industry }"
                                         >
+                                        <div class="invalid-feedback" v-if="errors?.industry">
+                                            {{ errors.industry }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label" for="companyDescription">Company Description</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="bi bi-file-text"></i>
+                                        </span>
+                                        <textarea 
+                                            class="form-control" 
+                                            id="companyDescription" 
+                                            v-model="formData.company_description"
+                                            placeholder="Enter company description"
+                                            :class="{ 'is-invalid': errors?.company_description }"
+                                        ></textarea>
+                                        <div class="invalid-feedback" v-if="errors?.company_description">
+                                            {{ errors.company_description }}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -171,7 +202,11 @@
                                         v-model="formData.location"
                                         placeholder="Enter your location"
                                         required
+                                        :class="{ 'is-invalid': errors?.location }"
                                     >
+                                    <div class="invalid-feedback" v-if="errors?.location">
+                                        {{ errors.location }}
+                                    </div>
                                 </div>
                             </div>
 
@@ -192,6 +227,7 @@
                                             v-model="formData.password"
                                             placeholder="Enter password"
                                             required
+                                            :class="{ 'is-invalid': errors?.password }"
                                         >
                                         <button 
                                             class="btn btn-outline-secondary" 
@@ -200,9 +236,9 @@
                                         >
                                             <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
                                         </button>
-                                    </div>
-                                    <div class="form-text">
-                                        Password must be at least 6 characters
+                                        <div class="invalid-feedback" v-if="errors?.password">
+                                            {{ errors.password }}
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -217,9 +253,10 @@
                                             :type="showConfirmPassword ? 'text' : 'password'" 
                                             class="form-control" 
                                             id="confirmPassword" 
-                                            v-model="formData.confirmPassword"
+                                            v-model="formData.password_confirmation"
                                             placeholder="Confirm password"
                                             required
+                                            :class="{ 'is-invalid': errors?.password_confirmation }"
                                         >
                                         <button 
                                             class="btn btn-outline-secondary" 
@@ -228,6 +265,9 @@
                                         >
                                             <i :class="showConfirmPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
                                         </button>
+                                        <div class="invalid-feedback" v-if="errors?.password_confirmation">
+                                            {{ errors.password_confirmation }}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -241,11 +281,15 @@
                                         id="terms" 
                                         v-model="acceptTerms"
                                         required
+                                        :class="{ 'is-invalid': errors?.terms }"
                                     >
                                     <label class="form-check-label" for="terms">
                                         I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> and 
                                         <a href="#" class="text-decoration-none">Privacy Policy</a>
                                     </label>
+                                    <div class="invalid-feedback" v-if="errors?.terms">
+                                        {{ errors.terms }}
+                                    </div>
                                 </div>
                             </div>
 
@@ -281,117 +325,126 @@
 
 <script>
 import SuccessModal from '@/components/SuccessModal.vue';
+import { authApi } from '@/services/api';
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 
 export default {
     name: 'Register',
-    
     components: {
         SuccessModal
     },
-
+    setup() {
+        const router = useRouter();
+        return { router };
+    },
     data() {
         return {
             formData: {
                 name: '',
                 email: '',
-                password: '',
-                confirmPassword: '',
                 phone: '',
-                location: '',
                 skills: '',
                 experience: '',
-                companySize: '',
+                education_level: "Bachelor's Degree",
+                location: '',
+                password: '',
+                password_confirmation: '',
+                company_description: '',
                 industry: '',
-                role: this.$route.query.type || 'seeker'
+                role: this.$route.query.type || 'seeker' // Default to job seeker if not specified
             },
             errors: null,
+            showSuccessModal: false,
             isLoading: false,
             showPassword: false,
             showConfirmPassword: false,
-            showSuccessModal: false,
             acceptTerms: false
         };
     },
-
     computed: {
         isEmployer() {
             return this.formData.role === 'employer';
         }
     },
-
     methods: {
-        validateForm() {
-            const errors = {};
-
-            if (!this.formData.name) {
-                errors.name = `${this.isEmployer ? 'Company name' : 'Name'} is required`;
-            }
-
-            if (!this.formData.email) {
-                errors.email = 'Email is required';
-            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.formData.email)) {
-                errors.email = 'Invalid email format';
-            }
-
-            if (!this.formData.password) {
-                errors.password = 'Password is required';
-            } else if (this.formData.password.length < 6) {
-                errors.password = 'Password must be at least 6 characters';
-            }
-
-            if (this.formData.password !== this.formData.confirmPassword) {
-                errors.confirmPassword = 'Passwords do not match';
-            }
-
-            if (!this.formData.phone) {
-                errors.phone = 'Phone number is required';
-            }
-
-            if (!this.formData.location) {
-                errors.location = 'Location is required';
-            }
-
-            // Role-specific validation
-            if (this.isEmployer) {
-                if (!this.formData.industry) {
-                    errors.industry = 'Industry is required';
-                }
-                if (!this.formData.companySize) {
-                    errors.companySize = 'Company size is required';
-                }
-            } else {
-                if (!this.formData.skills) {
-                    errors.skills = 'Skills are required';
-                }
-            }
-
-            this.errors = Object.keys(errors).length ? errors : null;
-            return !this.errors;
-        },
-
         async handleSignup() {
-            if (this.validateForm()) {
-                try {
-                    this.isLoading = true;
-                    const userData = {
-                        ...this.formData,
-                        createdAt: new Date().toISOString()
-                    };
-                    
-                    // Simulate API call
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    
-                    const existingData = JSON.parse(localStorage.getItem('userData')) || [];
-                    existingData.push(userData);
-                    localStorage.setItem('userData', JSON.stringify(existingData));
+            try {
+                this.isLoading = true;
+                this.errors = null;
 
-                    this.showSuccessModal = true;
-                } catch (error) {
-                    console.error('Registration error:', error);
-                    this.errors = { general: 'Registration failed. Please try again.' };
-                } finally {
-                    this.isLoading = false;
+                let formattedData;
+                
+                if (this.isEmployer) {
+                    // Format employer data
+                    formattedData = {
+                        company_name: this.formData.name,
+                        email: this.formData.email,
+                        password: this.formData.password,
+                        password_confirmation: this.formData.password_confirmation,
+                        phone: this.formData.phone,
+                        company_description: this.formData.company_description,
+                        industry: this.formData.industry,
+                        location: this.formData.location
+                    };
+                } else {
+                    // Format job seeker data
+                    formattedData = {
+                        name: this.formData.name,
+                        email: this.formData.email,
+                        password: this.formData.password,
+                        password_confirmation: this.formData.password_confirmation,
+                        phone: this.formData.phone,
+                        skills: this.formData.skills ? this.formData.skills.split(',').map(skill => skill.trim()) : [],
+                        years_of_experience: parseInt(this.formData.experience) || 0,
+                        education_level: this.formData.education_level,
+                        location: this.formData.location
+                    };
                 }
+
+                // Call the appropriate registration API
+                const response = this.isEmployer 
+                    ? await authApi.employerRegister(formattedData)
+                    : await authApi.jobSeekerRegister(formattedData);
+                
+                // Store the token
+                localStorage.setItem('token', response.data.token);
+                
+                // Show success message
+                this.showSuccessModal = true;
+                
+                // Reset form
+                this.formData = {
+                    name: '',
+                    email: '',
+                    phone: '',
+                    skills: '',
+                    experience: '',
+                    education_level: "Bachelor's Degree",
+                    location: '',
+                    password: '',
+                    password_confirmation: '',
+                    company_description: '',
+                    industry: '',
+                    role: this.formData.role // Preserve the current role
+                };
+
+                // Redirect to appropriate dashboard after a short delay
+                setTimeout(() => {
+                    this.router.push(this.isEmployer ? '/employer/dashboard' : '/jobseeker/dashboard');
+                }, 2000);
+
+            } catch (error) {
+                this.errors = {};
+                if (error.response?.data?.errors) {
+                    this.errors = error.response.data.errors;
+                } else if (error.response?.data?.message) {
+                    this.errors.general = error.response.data.message;
+                } else {
+                    this.errors.general = 'An error occurred during registration. Please try again.';
+                }
+            } finally {
+                this.isLoading = false;
             }
         },
 
