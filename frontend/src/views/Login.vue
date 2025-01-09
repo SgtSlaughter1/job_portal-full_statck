@@ -11,10 +11,30 @@
                             {{ error }}
                         </div>
 
+                        <!-- Login Type Selection -->
+                        <div class="btn-group w-100 mb-4">
+                            <button 
+                                type="button" 
+                                class="btn"
+                                :class="{ 'btn-primary': !isEmployer, 'btn-outline-primary': isEmployer }"
+                                @click="switchToJobSeeker"
+                            >
+                                Job Seeker
+                            </button>
+                            <button 
+                                type="button" 
+                                class="btn"
+                                :class="{ 'btn-primary': isEmployer, 'btn-outline-primary': !isEmployer }"
+                                @click="switchToEmployer"
+                            >
+                                Employer
+                            </button>
+                        </div>
+
                         <form @submit.prevent="handleLogin">
                             <!-- Email -->
                             <div class="mb-3">
-                                <label for="email" class="form-label">Email address</label>
+                                <label for="email" class="form-label">{{ isEmployer ? 'Company Email' : 'Email address' }}</label>
                                 <input 
                                     type="email" 
                                     class="form-control" 
@@ -83,7 +103,12 @@
                                 </p>
                                 <p class="mb-0">
                                     Don't have an account? 
-                                    <router-link to="/register" class="text-decoration-none">Sign up</router-link>
+                                    <router-link 
+                                        :to="{ path: '/register', query: { type: isEmployer ? 'employer' : 'seeker' }}" 
+                                        class="text-decoration-none"
+                                    >
+                                        Sign up
+                                    </router-link>
                                 </p>
                             </div>
                         </form>
@@ -96,9 +121,17 @@
 
 <script>
 import { useAuthStore } from '@/stores/auth';
+import { useRouter, useRoute } from 'vue-router';
 
 export default {
     name: 'Login',
+
+    setup() {
+        const router = useRouter();
+        const route = useRoute();
+        const authStore = useAuthStore();
+        return { router, route, authStore };
+    },
 
     data() {
         return {
@@ -111,22 +144,51 @@ export default {
             error: null,
             validationErrors: {},
             showPassword: false,
-            authStore: useAuthStore()
+            isEmployer: this.$route.query.type === 'employer'
         };
     },
 
     methods: {
+        // Switch to job seeker login
+        switchToJobSeeker() {
+            this.isEmployer = false;
+            this.resetForm();
+            this.router.replace({ query: { ...this.route.query, type: 'seeker' }});
+        },
+
+        // Switch to employer login
+        switchToEmployer() {
+            this.isEmployer = true;
+            this.resetForm();
+            this.router.replace({ query: { ...this.route.query, type: 'employer' }});
+        },
+
+        // Reset form data
+        resetForm() {
+            this.formData = {
+                email: '',
+                password: '',
+                remember: false
+            };
+            this.error = null;
+            this.validationErrors = {};
+        },
+
+        // Handle login submission
         async handleLogin() {
             try {
                 this.isLoading = true;
                 this.error = null;
                 this.validationErrors = {};
 
-                await this.authStore.login(this.formData);
-                
-                // Redirect to dashboard or previous page
-                const redirectPath = this.$route.query.redirect || '/dashboard';
-                this.$router.push(redirectPath);
+                // Call appropriate login method based on user type
+                if (this.isEmployer) {
+                    await this.authStore.employerLogin(this.formData);
+                    this.router.push('/employer/dashboard');
+                } else {
+                    await this.authStore.jobSeekerLogin(this.formData);
+                    this.router.push('/jobseeker/dashboard');
+                }
             } catch (error) {
                 if (error.response?.status === 422) {
                     // Validation errors
@@ -144,6 +206,7 @@ export default {
             }
         },
 
+        // Toggle password visibility
         togglePassword() {
             this.showPassword = !this.showPassword;
         }
@@ -169,5 +232,15 @@ export default {
 .form-check-input:checked {
     background-color: var(--bs-primary);
     border-color: var(--bs-primary);
+}
+
+.btn-group {
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.btn-group .btn {
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s ease;
 }
 </style>

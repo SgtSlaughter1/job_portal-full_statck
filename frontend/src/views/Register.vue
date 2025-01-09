@@ -1,10 +1,10 @@
 <template>
     <div class="container my-5">
         <div class="row justify-content-center">
-            <div class="col-md-8 col-lg-6">
+            <div class="col-md-8">
                 <div class="card border-0 shadow">
                     <div class="card-body p-4">
-                        <h2 class="text-center mb-4">{{ isEmployer ? 'Create Employer Account' : 'Create Job Seeker Account' }}</h2>
+                        <h2 class="text-center mb-4">Create Account</h2>
                         
                         <!-- Error Alert -->
                         <div v-if="errors?.general" class="alert alert-danger">
@@ -12,28 +12,51 @@
                         </div>
 
                         <form @submit.prevent="handleSignup" class="needs-validation" novalidate>
-                            <!-- Basic Information -->
+                            <!-- Registration Type
+                            <div class="btn-group mb-3">
+                                <button 
+                                    type="button" 
+                                    class="btn btn-primary" 
+                                    :class="{ 'active': isEmployer }"
+                                    @click="switchToEmployer"
+                                >
+                                    Employer
+                                </button>
+                                <button 
+                                    type="button" 
+                                    class="btn btn-primary" 
+                                    :class="{ 'active': !isEmployer }"
+                                    @click="switchToJobSeeker"
+                                >
+                                    Job Seeker
+                                </button>
+                            </div> -->
+
+                            <!-- Common Fields -->
                             <div class="row g-3 mb-3">
-                                <div class="col-12">
-                                    <label class="form-label" for="name">
-                                        {{ isEmployer ? 'Company Name' : 'Full Name' }}
-                                        <span class="text-danger">*</span>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="name" v-if="!isEmployer">
+                                        Name <span class="text-danger">*</span>
+                                    </label>
+                                    <label class="form-label" for="company_name" v-else>
+                                        Company Name <span class="text-danger">*</span>
                                     </label>
                                     <div class="input-group">
                                         <span class="input-group-text">
-                                            <i :class="isEmployer ? 'bi bi-building' : 'bi bi-person'"></i>
+                                            <i class="bi bi-building" v-if="isEmployer"></i>
+                                            <i class="bi bi-person" v-else></i>
                                         </span>
                                         <input 
                                             type="text" 
                                             class="form-control" 
-                                            id="name" 
-                                            v-model="formData.name"
-                                            :placeholder="isEmployer ? 'Enter company name' : 'Enter your full name'"
+                                            :id="isEmployer ? 'company_name' : 'name'"
+                                            v-model="formData[isEmployer ? 'company_name' : 'name']"
+                                            :placeholder="isEmployer ? 'Enter company name' : 'Enter name'"
                                             required
-                                            :class="{ 'is-invalid': errors?.name }"
+                                            :class="{ 'is-invalid': errors?.[isEmployer ? 'company_name' : 'name'] }"
                                         >
-                                        <div class="invalid-feedback" v-if="errors?.name">
-                                            {{ errors.name }}
+                                        <div class="invalid-feedback" v-if="errors?.[isEmployer ? 'company_name' : 'name']">
+                                            {{ errors[isEmployer ? 'company_name' : 'name'] }}
                                         </div>
                                     </div>
                                 </div>
@@ -83,100 +106,99 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- Role Specific Fields -->
-                            <div v-if="!isEmployer" class="row g-3 mb-3">
                                 <div class="col-md-6">
-                                    <label class="form-label" for="skills">Skills</label>
+                                    <label class="form-label" for="location">
+                                        Location <span class="text-danger">*</span>
+                                    </label>
                                     <div class="input-group">
                                         <span class="input-group-text">
-                                            <i class="bi bi-tools"></i>
+                                            <i class="bi bi-geo-alt"></i>
                                         </span>
                                         <input 
                                             type="text" 
                                             class="form-control" 
-                                            id="skills" 
-                                            v-model="formData.skills"
-                                            placeholder="e.g., JavaScript, React, Node.js"
-                                            :class="{ 'is-invalid': errors?.skills }"
+                                            id="location" 
+                                            v-model="formData.location"
+                                            placeholder="Enter location"
+                                            required
+                                            :class="{ 'is-invalid': errors?.location }"
                                         >
-                                        <div class="invalid-feedback" v-if="errors?.skills">
-                                            {{ errors.skills }}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label" for="experience">Years of Experience</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">
-                                            <i class="bi bi-clock-history"></i>
-                                        </span>
-                                        <input 
-                                            type="number" 
-                                            class="form-control" 
-                                            id="experience" 
-                                            v-model="formData.experience"
-                                            min="0"
-                                            placeholder="Enter years of experience"
-                                            :class="{ 'is-invalid': errors?.experience }"
-                                        >
-                                        <div class="invalid-feedback" v-if="errors?.experience">
-                                            {{ errors.experience }}
+                                        <div class="invalid-feedback" v-if="errors?.location">
+                                            {{ errors.location }}
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div v-if="isEmployer" class="row g-3 mb-3">
+                            <!-- Employer Specific Fields -->
+                            <div class="row g-3 mb-3" v-if="isEmployer">
                                 <div class="col-md-6">
-                                    <label class="form-label" for="companySize">Company Size</label>
+                                    <label class="form-label" for="company_size">
+                                        Company Size
+                                    </label>
                                     <div class="input-group">
                                         <span class="input-group-text">
                                             <i class="bi bi-people"></i>
                                         </span>
-                                        <select class="form-select" id="companySize" v-model="formData.companySize" :class="{ 'is-invalid': errors?.companySize }">
+                                        <select 
+                                            class="form-select" 
+                                            id="company_size" 
+                                            v-model="formData.company_size"
+                                            :class="{ 'is-invalid': errors?.company_size }"
+                                        >
                                             <option value="">Select company size</option>
-                                            <option value="1-10">1-10 employees</option>
-                                            <option value="11-50">11-50 employees</option>
-                                            <option value="51-200">51-200 employees</option>
-                                            <option value="201+">201+ employees</option>
+                                            <option v-for="size in companySizes" :key="size" :value="size">
+                                                {{ size }}
+                                            </option>
                                         </select>
-                                        <div class="invalid-feedback" v-if="errors?.companySize">
-                                            {{ errors.companySize }}
+                                        <div class="invalid-feedback" v-if="errors?.company_size">
+                                            {{ errors.company_size }}
                                         </div>
                                     </div>
                                 </div>
+
                                 <div class="col-md-6">
-                                    <label class="form-label" for="industry">Industry</label>
+                                    <label class="form-label" for="industry">
+                                        Industry <span class="text-danger">*</span>
+                                    </label>
                                     <div class="input-group">
                                         <span class="input-group-text">
                                             <i class="bi bi-briefcase"></i>
                                         </span>
-                                        <input 
-                                            type="text" 
-                                            class="form-control" 
+                                        <select 
+                                            class="form-select" 
                                             id="industry" 
                                             v-model="formData.industry"
-                                            placeholder="e.g., Technology, Healthcare"
+                                            required
                                             :class="{ 'is-invalid': errors?.industry }"
                                         >
+                                            <option value="">Select industry</option>
+                                            <option v-for="industry in industries" :key="industry" :value="industry">
+                                                {{ industry }}
+                                            </option>
+                                        </select>
                                         <div class="invalid-feedback" v-if="errors?.industry">
                                             {{ errors.industry }}
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-12">
-                                    <label class="form-label" for="companyDescription">Company Description</label>
+
+                                <div class="col-12">
+                                    <label class="form-label" for="company_description">
+                                        Company Description <span class="text-danger">*</span>
+                                    </label>
                                     <div class="input-group">
                                         <span class="input-group-text">
                                             <i class="bi bi-file-text"></i>
                                         </span>
                                         <textarea 
                                             class="form-control" 
-                                            id="companyDescription" 
+                                            id="company_description" 
                                             v-model="formData.company_description"
-                                            placeholder="Enter company description"
+                                            rows="3"
+                                            placeholder="Describe your company"
+                                            required
                                             :class="{ 'is-invalid': errors?.company_description }"
                                         ></textarea>
                                         <div class="invalid-feedback" v-if="errors?.company_description">
@@ -186,31 +208,79 @@
                                 </div>
                             </div>
 
-                            <!-- Location -->
-                            <div class="mb-3">
-                                <label class="form-label" for="location">
-                                    Location <span class="text-danger">*</span>
-                                </label>
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="bi bi-geo-alt"></i>
-                                    </span>
-                                    <input 
-                                        type="text" 
-                                        class="form-control" 
-                                        id="location" 
-                                        v-model="formData.location"
-                                        placeholder="Enter your location"
-                                        required
-                                        :class="{ 'is-invalid': errors?.location }"
-                                    >
-                                    <div class="invalid-feedback" v-if="errors?.location">
-                                        {{ errors.location }}
+                            <!-- Job Seeker Specific Fields -->
+                            <div class="row g-3 mb-3" v-else>
+                                <div class="col-md-6">
+                                    <label class="form-label" for="education_level">
+                                        Education Level
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="bi bi-book"></i>
+                                        </span>
+                                        <select 
+                                            class="form-select" 
+                                            id="education_level" 
+                                            v-model="formData.education_level"
+                                            :class="{ 'is-invalid': errors?.education_level }"
+                                        >
+                                            <option value="">Select education level</option>
+                                            <option v-for="level in educationLevels" :key="level" :value="level">
+                                                {{ level }}
+                                            </option>
+                                        </select>
+                                        <div class="invalid-feedback" v-if="errors?.education_level">
+                                            {{ errors.education_level }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label" for="years_of_experience">
+                                        Years of Experience
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="bi bi-briefcase"></i>
+                                        </span>
+                                        <input 
+                                            type="number" 
+                                            class="form-control" 
+                                            id="years_of_experience" 
+                                            v-model="formData.years_of_experience"
+                                            placeholder="Enter years of experience"
+                                            :class="{ 'is-invalid': errors?.years_of_experience }"
+                                        >
+                                        <div class="invalid-feedback" v-if="errors?.years_of_experience">
+                                            {{ errors.years_of_experience }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label" for="skills">
+                                        Skills
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="bi bi-tools"></i>
+                                        </span>
+                                        <input 
+                                            type="text" 
+                                            class="form-control" 
+                                            id="skills" 
+                                            v-model="formData.skills"
+                                            placeholder="Enter skills (comma separated)"
+                                            :class="{ 'is-invalid': errors?.skills }"
+                                        >
+                                        <div class="invalid-feedback" v-if="errors?.skills">
+                                            {{ errors.skills }}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Password Fields -->
+                            <!-- Password Section -->
                             <div class="row g-3 mb-4">
                                 <div class="col-md-6">
                                     <label class="form-label" for="password">
@@ -221,7 +291,7 @@
                                             <i class="bi bi-lock"></i>
                                         </span>
                                         <input 
-                                            :type="showPassword ? 'text' : 'password'" 
+                                            type="password" 
                                             class="form-control" 
                                             id="password" 
                                             v-model="formData.password"
@@ -229,20 +299,14 @@
                                             required
                                             :class="{ 'is-invalid': errors?.password }"
                                         >
-                                        <button 
-                                            class="btn btn-outline-secondary" 
-                                            type="button"
-                                            @click="showPassword = !showPassword"
-                                        >
-                                            <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
-                                        </button>
                                         <div class="invalid-feedback" v-if="errors?.password">
                                             {{ errors.password }}
                                         </div>
                                     </div>
                                 </div>
+
                                 <div class="col-md-6">
-                                    <label class="form-label" for="confirmPassword">
+                                    <label class="form-label" for="password_confirmation">
                                         Confirm Password <span class="text-danger">*</span>
                                     </label>
                                     <div class="input-group">
@@ -250,21 +314,14 @@
                                             <i class="bi bi-lock"></i>
                                         </span>
                                         <input 
-                                            :type="showConfirmPassword ? 'text' : 'password'" 
+                                            type="password" 
                                             class="form-control" 
-                                            id="confirmPassword" 
+                                            id="password_confirmation" 
                                             v-model="formData.password_confirmation"
                                             placeholder="Confirm password"
                                             required
                                             :class="{ 'is-invalid': errors?.password_confirmation }"
                                         >
-                                        <button 
-                                            class="btn btn-outline-secondary" 
-                                            type="button"
-                                            @click="showConfirmPassword = !showConfirmPassword"
-                                        >
-                                            <i :class="showConfirmPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
-                                        </button>
                                         <div class="invalid-feedback" v-if="errors?.password_confirmation">
                                             {{ errors.password_confirmation }}
                                         </div>
@@ -272,41 +329,21 @@
                                 </div>
                             </div>
 
-                            <!-- Terms and Conditions -->
-                            <div class="mb-4">
-                                <div class="form-check">
-                                    <input 
-                                        type="checkbox" 
-                                        class="form-check-input" 
-                                        id="terms" 
-                                        v-model="acceptTerms"
-                                        required
-                                        :class="{ 'is-invalid': errors?.terms }"
-                                    >
-                                    <label class="form-check-label" for="terms">
-                                        I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> and 
-                                        <a href="#" class="text-decoration-none">Privacy Policy</a>
-                                    </label>
-                                    <div class="invalid-feedback" v-if="errors?.terms">
-                                        {{ errors.terms }}
-                                    </div>
-                                </div>
-                            </div>
-
                             <!-- Submit Button -->
-                            <div class="d-grid gap-2">
+                            <div class="d-grid">
                                 <button 
                                     type="submit" 
-                                    class="btn btn-primary py-2"
-                                    :disabled="!acceptTerms || isLoading"
+                                    class="btn btn-primary"
+                                    :disabled="isLoading"
                                 >
                                     <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
                                     {{ isLoading ? 'Creating Account...' : 'Create Account' }}
                                 </button>
-                                <div class="text-center">
-                                    Already have an account?
-                                    <router-link to="/login" class="text-decoration-none"> Sign in</router-link>
-                                </div>
+                            </div>
+
+                            <div class="text-center mt-3">
+                                Already have an account? 
+                                <router-link to="/login" class="text-primary">Login here</router-link>
                             </div>
                         </form>
                     </div>
@@ -317,175 +354,201 @@
         <!-- Success Modal -->
         <SuccessModal 
             :show="showSuccessModal"
-            type="register"
+            :title="isEmployer ? 'Registration Successful!' : 'Registration Successful!'"
+            :message="successMessage"
             @close="handleSuccessModalClose"
         />
     </div>
 </template>
 
 <script>
-import SuccessModal from '@/components/SuccessModal.vue';
-import { authApi } from '@/services/api';
-import { ref } from 'vue';
+import { defineComponent } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+import SuccessModal from '@/components/SuccessModal.vue';
 
-export default {
+export default defineComponent({
     name: 'Register',
     components: {
         SuccessModal
     },
     setup() {
         const router = useRouter();
-        return { router };
+        const authStore = useAuthStore();
+        return { router, authStore };
     },
     data() {
         return {
+            // Form data for both registration types
             formData: {
+                // Common fields
                 name: '',
+                company_name: '',
                 email: '',
                 phone: '',
-                skills: '',
-                experience: '',
-                education_level: "Bachelor's Degree",
                 location: '',
                 password: '',
                 password_confirmation: '',
-                company_description: '',
+
+                // Employer specific fields
+                company_size: '',
                 industry: '',
-                role: this.$route.query.type || 'seeker' // Default to job seeker if not specified
+                company_description: '',
+
+                // Job seeker specific fields
+                education_level: '',
+                years_of_experience: '',
+                skills: '',
             },
             errors: null,
             showSuccessModal: false,
-            isLoading: false,
-            showPassword: false,
-            showConfirmPassword: false,
-            acceptTerms: false
+
+            // Dropdown options
+            industries: [
+                'Technology',
+                'Healthcare',
+                'Finance',
+                'Education',
+                'Manufacturing',
+                'Retail',
+                'Construction',
+                'Transportation',
+                'Media',
+                'Other'
+            ],
+            companySizes: [
+                '1-10 employees',
+                '11-50 employees',
+                '51-200 employees',
+                '201-500 employees',
+                '501+ employees'
+            ],
+            educationLevels: [
+                'High School',
+                'Associate Degree',
+                'Bachelor\'s Degree',
+                'Master\'s Degree',
+                'PhD',
+                'Other'
+            ]
         };
     },
     computed: {
+        // Determine if registration is for employer
         isEmployer() {
-            return this.formData.role === 'employer';
+            return this.$route.query.type === 'employer';
+        },
+        // Dynamic success message based on registration type
+        successMessage() {
+            return this.isEmployer 
+                ? 'Your employer account has been created successfully. You will be redirected to your dashboard.'
+                : 'Your job seeker account has been created successfully. You will be redirected to your dashboard.';
+        },
+        // Get loading state from store
+        isLoading() {
+            return this.authStore.isLoading;
         }
     },
     methods: {
+        // Reset form data
+        resetForm() {
+            this.formData = {
+                name: '',
+                company_name: '',
+                email: '',
+                phone: '',
+                location: '',
+                password: '',
+                password_confirmation: '',
+                company_size: '',
+                industry: '',
+                company_description: '',
+                education_level: '',
+                years_of_experience: '',
+                skills: '',
+            };
+            this.errors = null;
+        },
+        // Format job seeker data for API
+        formatJobSeekerData() {
+            return {
+                name: this.formData.name,
+                email: this.formData.email,
+                phone: this.formData.phone,
+                location: this.formData.location,
+                password: this.formData.password,
+                password_confirmation: this.formData.password_confirmation,
+                education_level: this.formData.education_level,
+                years_of_experience: parseInt(this.formData.years_of_experience) || 0,
+                skills: this.formData.skills.split(',').map(skill => skill.trim())
+            };
+        },
+        // Format employer data for API
+        formatEmployerData() {
+            return {
+                company_name: this.formData.company_name,
+                email: this.formData.email,
+                phone: this.formData.phone,
+                location: this.formData.location,
+                password: this.formData.password,
+                password_confirmation: this.formData.password_confirmation,
+                company_size: this.formData.company_size,
+                industry: this.formData.industry,
+                company_description: this.formData.company_description
+            };
+        },
+        // Handle form submission
         async handleSignup() {
             try {
-                this.isLoading = true;
                 this.errors = null;
 
-                let formattedData;
-                
+                // Format data based on registration type
+                const formattedData = this.isEmployer 
+                    ? this.formatEmployerData()
+                    : this.formatJobSeekerData();
+
+                // Register using the appropriate store method
                 if (this.isEmployer) {
-                    // Format employer data
-                    formattedData = {
-                        company_name: this.formData.name,
-                        email: this.formData.email,
-                        password: this.formData.password,
-                        password_confirmation: this.formData.password_confirmation,
-                        phone: this.formData.phone,
-                        company_description: this.formData.company_description,
-                        industry: this.formData.industry,
-                        location: this.formData.location
-                    };
+                    await this.authStore.registerEmployer(formattedData);
                 } else {
-                    // Format job seeker data
-                    formattedData = {
-                        name: this.formData.name,
-                        email: this.formData.email,
-                        password: this.formData.password,
-                        password_confirmation: this.formData.password_confirmation,
-                        phone: this.formData.phone,
-                        skills: this.formData.skills ? this.formData.skills.split(',').map(skill => skill.trim()) : [],
-                        years_of_experience: parseInt(this.formData.experience) || 0,
-                        education_level: this.formData.education_level,
-                        location: this.formData.location
-                    };
+                    await this.authStore.registerJobSeeker(formattedData);
                 }
 
-                // Call the appropriate registration API
-                const response = this.isEmployer 
-                    ? await authApi.employerRegister(formattedData)
-                    : await authApi.jobSeekerRegister(formattedData);
-                
-                // Store the token
-                localStorage.setItem('token', response.data.token);
-                
-                // Show success message
+                // Show success modal
                 this.showSuccessModal = true;
-                
-                // Reset form
-                this.formData = {
-                    name: '',
-                    email: '',
-                    phone: '',
-                    skills: '',
-                    experience: '',
-                    education_level: "Bachelor's Degree",
-                    location: '',
-                    password: '',
-                    password_confirmation: '',
-                    company_description: '',
-                    industry: '',
-                    role: this.formData.role // Preserve the current role
-                };
-
-                // Redirect to appropriate dashboard after a short delay
-                setTimeout(() => {
-                    this.router.push(this.isEmployer ? '/employer/dashboard' : '/jobseeker/dashboard');
-                }, 2000);
+                this.resetForm();
 
             } catch (error) {
-                this.errors = {};
                 if (error.response?.data?.errors) {
                     this.errors = error.response.data.errors;
-                } else if (error.response?.data?.message) {
-                    this.errors.general = error.response.data.message;
                 } else {
-                    this.errors.general = 'An error occurred during registration. Please try again.';
+                    this.errors = {
+                        general: this.authStore.error || 'An error occurred during registration. Please try again.'
+                    };
                 }
-            } finally {
-                this.isLoading = false;
             }
         },
-
+        // Handle success modal close
         handleSuccessModalClose() {
             this.showSuccessModal = false;
-            this.$router.push('/login');
+            this.router.push(this.isEmployer ? '/employer/dashboard' : '/jobseeker/dashboard');
         }
     }
-};
+});
 </script>
 
 <style scoped>
-.card {
-    border-radius: 1rem;
+.invalid-feedback {
+    display: block;
 }
 
 .form-control:focus,
-.form-select:focus,
-.btn-check:checked + .btn-outline-primary {
-    border-color: var(--bs-primary);
-    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
-}
-
-.input-group-text {
-    background-color: transparent;
+.form-select:focus {
+    box-shadow: none;
+    border-color: #0d6efd;
 }
 
 .btn-primary {
-    padding: 0.75rem;
-    font-weight: 500;
-}
-
-.form-check-input:checked {
-    background-color: var(--bs-primary);
-    border-color: var(--bs-primary);
-}
-
-@media (max-width: 768px) {
-    .card {
-        border-radius: 0;
-        box-shadow: none;
-    }
+    padding: 0.75rem 1.5rem;
 }
 </style>

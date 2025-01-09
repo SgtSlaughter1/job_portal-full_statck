@@ -73,12 +73,29 @@ export const jobsApi = {
 
 // Auth API
 export const authApi = {
-    jobSeekerLogin: (credentials) => api.post('/jobseeker/login', credentials),
-    jobSeekerRegister: (userData) => api.post('/jobseeker/register', userData),
-    employerLogin: (credentials) => api.post('/employer/login', credentials),
-    employerRegister: (userData) => api.post('/employer/register', userData),
-    logout: () => api.post('/logout'),
-    getUser: () => api.get('/auth/user')
+    // Job Seeker Authentication
+    jobSeekerLogin: (credentials) => {
+        return api.post('/jobseeker/login', credentials);
+    },
+    jobSeekerRegister: (userData) => {
+        return api.post('/jobseeker/register', userData);
+    },
+
+    // Employer Authentication
+    employerLogin: (credentials) => {
+        return api.post('/employer/login', credentials);
+    },
+    employerRegister: (userData) => {
+        return api.post('/employer/register', userData);
+    },
+
+    // Common Authentication
+    logout: () => {
+        return api.post('/logout');
+    },
+    getUser: () => {
+        return api.get('/user');
+    }
 };
 
 // Profile API
