@@ -1,9 +1,21 @@
 import { defineStore } from 'pinia';
-import { authApi } from '@/services/api';
+import { authApi, handleApiError } from '@/services/api';
+import router from '@/router';
+
+// Helper function to safely parse JSON from localStorage
+const safeJSONParse = (key) => {
+    try {
+        const item = localStorage.getItem(key);
+        return item ? JSON.parse(item) : null;
+    } catch (e) {
+        console.error(`Error parsing ${key} from localStorage:`, e);
+        return null;
+    }
+};
 
 export const useAuthStore = defineStore('auth', {
     state: () => ({
-        user: null,
+        user: safeJSONParse('user'),
         token: localStorage.getItem('token'),
         loading: false,
         error: null,
@@ -26,17 +38,20 @@ export const useAuthStore = defineStore('auth', {
             this.error = null;
             try {
                 const response = await authApi.employerRegister(employerData);
-                this.token = response.data.token;
-                this.user = response.data.employer;
+                const { token, employer } = response.data;
+                
+                this.token = token;
+                this.user = employer;
                 this.userType = 'employer';
                 
-                localStorage.setItem('token', this.token);
-                localStorage.setItem('user', JSON.stringify(this.user));
+                localStorage.setItem('token', token);
+                localStorage.setItem('user', JSON.stringify(employer));
                 localStorage.setItem('userType', 'employer');
                 
                 return true;
             } catch (error) {
-                this.error = error.response?.data?.message || 'Employer registration failed';
+                const { message } = handleApiError(error);
+                this.error = message;
                 throw error;
             } finally {
                 this.loading = false;
@@ -49,17 +64,20 @@ export const useAuthStore = defineStore('auth', {
             this.error = null;
             try {
                 const response = await authApi.jobSeekerRegister(jobSeekerData);
-                this.token = response.data.token;
-                this.user = response.data.job_seeker;
+                const { token, job_seeker } = response.data;
+                
+                this.token = token;
+                this.user = job_seeker;
                 this.userType = 'jobseeker';
                 
-                localStorage.setItem('token', this.token);
-                localStorage.setItem('user', JSON.stringify(this.user));
+                localStorage.setItem('token', token);
+                localStorage.setItem('user', JSON.stringify(job_seeker));
                 localStorage.setItem('userType', 'jobseeker');
                 
                 return true;
             } catch (error) {
-                this.error = error.response?.data?.message || 'Job seeker registration failed';
+                const { message } = handleApiError(error);
+                this.error = message;
                 throw error;
             } finally {
                 this.loading = false;
@@ -72,17 +90,27 @@ export const useAuthStore = defineStore('auth', {
             this.error = null;
             try {
                 const response = await authApi.employerLogin(credentials);
-                this.token = response.data.token;
-                this.user = response.data.employer;
+                
+                // Check if response has the expected structure
+                if (!response.data?.data?.token || !response.data?.data?.employer) {
+                    throw new Error('Invalid response structure from server');
+                }
+                
+                const { token, employer } = response.data.data;
+                
+                this.token = token;
+                this.user = employer;
                 this.userType = 'employer';
                 
-                localStorage.setItem('token', this.token);
-                localStorage.setItem('user', JSON.stringify(this.user));
+                localStorage.setItem('token', token);
+                localStorage.setItem('user', JSON.stringify(employer));
                 localStorage.setItem('userType', 'employer');
                 
-                return true;
+                await router.push('/dashboard');
+                return response.data;
             } catch (error) {
-                this.error = error.response?.data?.message || 'Employer login failed';
+                const { message } = handleApiError(error);
+                this.error = message;
                 throw error;
             } finally {
                 this.loading = false;
@@ -95,63 +123,109 @@ export const useAuthStore = defineStore('auth', {
             this.error = null;
             try {
                 const response = await authApi.jobSeekerLogin(credentials);
-                this.token = response.data.token;
-                this.user = response.data.job_seeker;
+                
+                // Check if response has the expected structure
+                if (!response.data?.token || !response.data?.job_seeker) {
+                    throw new Error('Invalid response structure from server');
+                }
+                
+                const { token, job_seeker } = response.data;
+                
+                this.token = token;
+                this.user = job_seeker;
                 this.userType = 'jobseeker';
                 
-                localStorage.setItem('token', this.token);
-                localStorage.setItem('user', JSON.stringify(this.user));
+                localStorage.setItem('token', token);
+                localStorage.setItem('user', JSON.stringify(job_seeker));
                 localStorage.setItem('userType', 'jobseeker');
                 
-                return true;
+                await router.push('/dashboard');
+                return response.data;
             } catch (error) {
-                this.error = error.response?.data?.message || 'Job seeker login failed';
+                const { message } = handleApiError(error);
+                this.error = message;
                 throw error;
             } finally {
                 this.loading = false;
             }
         },
 
-        async logout() {
-            this.loading = true;
+        // Initialize auth state from localStorage
+        initializeAuth() {
             try {
-                await authApi.logout();
+                const token = localStorage.getItem('token');
+                const userStr = localStorage.getItem('user');
+                const userType = localStorage.getItem('userType');
+                
+                if (token && userStr && userType) {
+                    this.token = token;
+                    this.user = JSON.parse(userStr);
+                    this.userType = userType;
+                } else {
+                    // If any required auth data is missing, clear everything
+                    this.clearAuth();
+                }
             } catch (error) {
-                console.error('Logout error:', error);
-            } finally {
-                this.token = null;
-                this.user = null;
-                this.userType = null;
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                localStorage.removeItem('userType');
-                this.loading = false;
+                console.error('Error initializing auth state:', error);
+                this.clearAuth();
             }
         },
 
+        // Clear all auth data
+        clearAuth() {
+            this.token = null;
+            this.user = null;
+            this.userType = null;
+            this.error = null;
+            
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('userType');
+        },
+
+        // Logout
+        async logout() {
+            try {
+                if (this.token) {
+                    await authApi.logout();
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+            } finally {
+                this.clearAuth();
+                await router.push('/login');
+            }
+        },
+
+        // Fetch current user
         async fetchUser() {
             if (!this.token) return;
             
             this.loading = true;
             try {
                 const response = await authApi.getUser();
-                this.user = response.data;
-                this.error = null;
+                this.user = response.data.data;
+                
+                // Update localStorage
+                localStorage.setItem('user', JSON.stringify(this.user));
+                
+                return this.user;
             } catch (error) {
-                this.error = error.response?.data?.message || 'Failed to fetch user';
+                const { message } = handleApiError(error);
+                this.error = message;
+                
+                // If unauthorized, clear auth state
                 if (error.response?.status === 401) {
-                    this.token = null;
-                    this.user = null;
-                    this.userType = null;
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                    localStorage.removeItem('userType');
+                    await this.logout();
                 }
+                
+                throw error;
             } finally {
                 this.loading = false;
             }
         },
 
+        // Clear error
         clearError() {
             this.error = null;
         }

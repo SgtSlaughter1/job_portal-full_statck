@@ -5,8 +5,12 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\Job;
+use App\Models\JobSeeker;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class JobSeekerController extends Controller
 {
@@ -53,36 +57,134 @@ class JobSeekerController extends Controller
     }
 
     /**
-     * Get the authenticated user's profile.
+     * Get the authenticated job seeker's profile
      */
-    public function profile(Request $request)
+    public function getProfile(Request $request)
     {
-        return response()->json($request->user());
+        try {
+            $jobSeeker = $request->user();
+            if (!$jobSeeker || !($jobSeeker instanceof JobSeeker)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized or invalid user type'
+                ], 401);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $jobSeeker
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch job seeker profile'
+            ], 500);
+        }
     }
 
     /**
-     * Update the authenticated user's profile.
+     * Update the job seeker's profile
      */
     public function updateProfile(Request $request)
     {
-        $validated = $request->validate([
-            'first_name' => 'sometimes|string|max:255',
-            'last_name' => 'sometimes|string|max:255',
-            'phone' => 'nullable|string',
-            'bio' => 'nullable|string',
-            'resume_url' => 'nullable|url',
-            'skills' => 'nullable|array',
-            'education_level' => 'sometimes|string',
-            'field_of_study' => 'nullable|string',
-            'years_of_experience' => 'sometimes|integer',
-            'current_job_title' => 'nullable|string',
-            'location' => 'sometimes|string',
-            'profile_picture' => 'nullable|url',
-        ]);
+        try {
+            $jobSeeker = $request->user();
+            if (!$jobSeeker || !($jobSeeker instanceof JobSeeker)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized or invalid user type'
+                ], 401);
+            }
 
-        $request->user()->update($validated);
+            $validator = Validator::make($request->all(), [
+                'name' => 'sometimes|string|max:255',
+                'email' => 'sometimes|email|unique:job_seekers,email,' . $jobSeeker->id,
+                'phone' => 'sometimes|string|max:20',
+                'bio' => 'sometimes|string|nullable',
+                'skills' => 'sometimes|array',
+                'education_level' => 'sometimes|string|max:100',
+                'experience_years' => 'sometimes|integer|min:0',
+                'current_position' => 'sometimes|string|max:100',
+                'expected_salary' => 'sometimes|integer|min:0',
+                'is_available' => 'sometimes|boolean',
+                'resume_url' => 'sometimes|file|mimes:pdf,doc,docx|max:2048'
+            ]);
 
-        return response()->json($request->user());
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $data = $request->except(['resume_url']);
+
+            // Handle resume upload if present
+            if ($request->hasFile('resume_url')) {
+                // Delete old resume if exists
+                if ($jobSeeker->resume_url) {
+                    $oldPath = str_replace('/storage/', 'public/', $jobSeeker->resume_url);
+                    Storage::delete($oldPath);
+                }
+
+                $path = $request->file('resume_url')->store('public/resumes');
+                $data['resume_url'] = Storage::url($path);
+            }
+
+            // Handle skills array
+            if ($request->has('skills')) {
+                $data['skills'] = array_map('trim', $request->skills);
+            }
+
+            $jobSeeker->update($data);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Profile updated successfully',
+                'data' => $jobSeeker
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update profile: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get job seeker's applications and related data
+     */
+    public function getDashboardData(Request $request)
+    {
+        try {
+            $jobSeeker = $request->user();
+            if (!$jobSeeker || !($jobSeeker instanceof JobSeeker)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized or invalid user type'
+                ], 401);
+            }
+
+            // Load relationships
+            $jobSeeker->load(['applications' => function ($query) {
+                $query->with(['job' => function ($query) {
+                    $query->with('employer:id,company_name,industry,location');
+                }]);
+            }]);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => [
+                    'profile' => $jobSeeker,
+                    'applications' => $jobSeeker->applications
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch dashboard data: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

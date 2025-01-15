@@ -47,25 +47,55 @@ class AuthController extends Controller
 
     public function employerLogin(Request $request)
     {
-        $validated = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+        try {
+            // Validate request data
+            $validated = $request->validate([
+                'email' => 'required|email|exists:employers,email',
+                'password' => 'required|string|min:8',
+            ]);
 
-        if (!Auth::guard('employer')->attempt($validated)) {
+            // Find the employer
+            $employer = Employer::where('email', $validated['email'])->first();
+
+            // Check if employer exists and password is correct
+            if (!$employer || !Hash::check($validated['password'], $employer->password)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invalid credentials'
+                ], 401);
+            }
+
+            // Delete existing tokens and create a new one
+            $employer->tokens()->delete();
+            $token = $employer->createToken('auth_token')->plainTextToken;
+
+            // Log successful login
+            Log::info('Employer logged in successfully', ['employer_id' => $employer->id]);
+
             return response()->json([
-                'message' => 'Invalid login credentials'
-            ], 401);
+                'status' => 'success',
+                'message' => 'Login successful',
+                'data' => [
+                    'employer' => $employer,
+                    'token' => $token,
+                    'token_type' => 'Bearer'
+                ]
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Employer Login Error: ' . $e->getMessage());
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occurred during login'
+            ], 500);
         }
-
-        $employer = Employer::where('email', $validated['email'])->firstOrFail();
-        $token = $employer->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'employer' => $employer,
-            'token' => $token,
-            'token_type' => 'Bearer',
-        ]);
     }
 
 
