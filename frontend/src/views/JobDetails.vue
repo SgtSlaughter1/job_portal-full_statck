@@ -13,7 +13,7 @@
 
         <div v-else class="job-details">
             <!-- Header Section -->
-            <div class="card mb-4 border-0 shadow-sm">
+            <!-- <div class="card mb-4 border-0 shadow-sm">
                 <div class="card-body">
                     <h1 class="card-title text-primary mb-3">{{ job.jobTitle }}</h1>
                     <div class="company-info mb-3">
@@ -26,7 +26,7 @@
                         <span class="badge bg-success">{{ job.pay }}</span>
                     </div>
                 </div>
-            </div>
+            </div> -->
 
             <!-- Details Section -->
             <div class="row">

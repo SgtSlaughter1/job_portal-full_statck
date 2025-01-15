@@ -24,14 +24,14 @@ export const useJobStore = defineStore("jobs", {
     async fetchJobs(page = 1, filters = {}) {
       this.loading = true;
       try {
-        const params = new URLSearchParams({
+        const params = {
           page,
           ...(filters.search && { search: filters.search }),
           ...(filters.type && { type: filters.type }),
           ...(filters.location && { location: filters.location })
-        });
+        };
 
-        const response = await jobsApi.getJobs(params.toString());
+        const response = await jobsApi.getJobs(params);
         this.jobs = response.data.data;
         this.currentPage = response.data.current_page;
         this.totalPages = response.data.last_page;
@@ -49,7 +49,7 @@ export const useJobStore = defineStore("jobs", {
       
       this.loading = true;
       try {
-        const response = await jobsApi.getJobById(id);
+        const response = await jobsApi.getJob(id);
         this.currentJob = response.data.data;
         this.error = null;
         return this.currentJob;

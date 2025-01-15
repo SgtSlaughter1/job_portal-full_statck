@@ -184,10 +184,10 @@ export default {
                 // Call appropriate login method based on user type
                 if (this.isEmployer) {
                     await this.authStore.employerLogin(this.formData);
-                    this.router.push('/employer/dashboard');
+                    this.router.push('/profile');
                 } else {
                     await this.authStore.jobSeekerLogin(this.formData);
-                    this.router.push('/jobseeker/dashboard');
+                    this.router.push('/profile');
                 }
             } catch (error) {
                 if (error.response?.status === 422) {
