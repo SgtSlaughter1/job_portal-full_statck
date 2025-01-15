@@ -1,4 +1,3 @@
-
 <template>
     <section class="py-5 bg-light">
         <div class="container">
@@ -18,42 +17,48 @@
     </section>
 </template>
 
-<script setup>
-import { useRouter } from 'vue-router';
+<script>
+export default {
+    name: 'HowItWorks',
+    
+    data() {
+        return {
+            steps: [
+                {
+                    icon: '👤',
+                    title: 'Create Account',
+                    description: 'Sign up as a job seeker or employer in minutes'
+                },
+                {
+                    icon: '🔍',
+                    title: 'Search Jobs',
+                    description: 'Browse thousands of jobs from top companies'
+                },
+                {
+                    icon: '📝',
+                    title: 'Apply Easily',
+                    description: 'Quick apply with your profile and resume'
+                },
+                {
+                    icon: '🎯',
+                    title: 'Track your application',
+                    description: 'Land your dream job and start your new career'
+                }
+            ]
+        };
+    },
 
-const router = useRouter();
-
-const handleStepClick = (title) => {
-    if (title === 'Create Account') {
-        router.push('/account-type');
-    }
-    if (title === 'Search Jobs') {
-        router.push('/jobs');
+    methods: {
+        handleStepClick(title) {
+            if (title === 'Create Account') {
+                this.$router.push('/account-type');
+            }
+            if (title === 'Search Jobs') {
+                this.$router.push('/jobs');
+            }
+        }
     }
 };
-
-const steps = [
-    {
-        icon: '👤',
-        title: 'Create Account',
-        description: 'Sign up as a job seeker or employer in minutes'
-    },
-    {
-        icon: '🔍',
-        title: 'Search Jobs',
-        description: 'Browse thousands of jobs from top companies'
-    },
-    {
-        icon: '📝',
-        title: 'Apply Easily',
-        description: 'Quick apply with your profile and resume'
-    },
-    {
-        icon: '🎯',
-        title: 'Track your application',
-        description: 'Land your dream job and start your new career'
-    }
-]
 </script>
 
 <style scoped>

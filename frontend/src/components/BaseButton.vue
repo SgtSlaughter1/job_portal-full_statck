@@ -1,5 +1,9 @@
 <template>
-    <button :class="buttonClass" @click="handleClick">
+    <button 
+        :class="buttonClass" 
+        @click="handleClick"
+        :disabled="disabled"
+    >
         <slot></slot>
     </button>
 </template>
@@ -7,6 +11,7 @@
 <script>
 export default {
     name: 'BaseButton',
+    
     props: {
         buttonClass: {
             type: String,
@@ -15,14 +20,22 @@ export default {
         onClick: {
             type: Function,
             default: () => {}
+        },
+        disabled: {
+            type: Boolean,
+            default: false
         }
     },
+
     methods: {
         handleClick(event) {
-            this.onClick(event);
+            if (!this.disabled) {
+                this.$emit('click', event);
+                this.onClick(event);
+            }
         }
     }
-}
+};
 </script>
 
 <style scoped>

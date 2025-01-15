@@ -121,20 +121,13 @@
 
 <script>
 import { useAuthStore } from '@/stores/auth';
-import { useRouter, useRoute } from 'vue-router';
 
 export default {
     name: 'Login',
 
-    setup() {
-        const router = useRouter();
-        const route = useRoute();
-        const authStore = useAuthStore();
-        return { router, route, authStore };
-    },
-
     data() {
         return {
+            authStore: useAuthStore(),
             formData: {
                 email: '',
                 password: '',
@@ -149,21 +142,18 @@ export default {
     },
 
     methods: {
-        // Switch to job seeker login
         switchToJobSeeker() {
             this.isEmployer = false;
             this.resetForm();
-            this.router.replace({ query: { ...this.route.query, type: 'seeker' }});
+            this.$router.replace({ query: { ...this.$route.query, type: 'seeker' }});
         },
 
-        // Switch to employer login
         switchToEmployer() {
             this.isEmployer = true;
             this.resetForm();
-            this.router.replace({ query: { ...this.route.query, type: 'employer' }});
+            this.$router.replace({ query: { ...this.$route.query, type: 'employer' }});
         },
 
-        // Reset form data
         resetForm() {
             this.formData = {
                 email: '',
@@ -174,30 +164,28 @@ export default {
             this.validationErrors = {};
         },
 
-        // Handle login submission
         async handleLogin() {
             try {
                 this.isLoading = true;
                 this.error = null;
                 this.validationErrors = {};
 
-                // Call appropriate login method based on user type
                 if (this.isEmployer) {
                     await this.authStore.employerLogin(this.formData);
-                    this.router.push('/profile');
                 } else {
                     await this.authStore.jobSeekerLogin(this.formData);
-                    this.router.push('/profile');
                 }
+
+                // Handle redirect after successful login
+                const redirectPath = this.$route.query.redirect || '/profile';
+                this.$router.push(redirectPath);
+
             } catch (error) {
                 if (error.response?.status === 422) {
-                    // Validation errors
                     this.validationErrors = error.response.data.errors;
                 } else if (error.response?.status === 401) {
-                    // Invalid credentials
                     this.error = 'Invalid email or password';
                 } else {
-                    // Other errors
                     this.error = 'An error occurred. Please try again.';
                     console.error('Login error:', error);
                 }
@@ -206,7 +194,6 @@ export default {
             }
         },
 
-        // Toggle password visibility
         togglePassword() {
             this.showPassword = !this.showPassword;
         }
