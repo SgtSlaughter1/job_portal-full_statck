@@ -53,7 +53,7 @@
                                 <i class="bi" :class="userRole === 'employer' ? 'bi-building' : 'bi-person'"></i>
                                 {{ userRole === 'employer' ? 'Company Profile' : 'Profile' }}
                             </h3>
-                            <button class="btn btn-light btn-sm" @click="$router.push('/profile/edit')">
+                            <button class="btn btn-light btn-sm" @click="$router.push('/edit-profile')">
                                 Edit Profile
                             </button>
                         </div>

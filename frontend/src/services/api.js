@@ -11,13 +11,13 @@ const api = axios.create({
 
 // Add request interceptor to add auth token
 api.interceptors.request.use(config => {
-    const token = localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
 }, error => {
-    return Promise.reject(error);
+        return Promise.reject(error);
 });
 
 // Add response interceptor to handle auth errors
@@ -26,13 +26,13 @@ api.interceptors.response.use(
     error => {
         if (error.response?.status === 401) {
             // Clear auth data on 401 responses
-            localStorage.removeItem('token');
+                    localStorage.removeItem('token');
             localStorage.removeItem('user');
             localStorage.removeItem('userType');
             
             // Redirect to login if not already there
             if (!window.location.pathname.includes('/login')) {
-                window.location.href = '/login';
+                    window.location.href = '/login';
             }
         }
         return Promise.reject(error);

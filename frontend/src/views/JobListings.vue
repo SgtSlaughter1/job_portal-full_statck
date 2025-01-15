@@ -6,7 +6,7 @@
                 <div class="input-group">
                     <input type="text" class="form-control" placeholder="Search jobs..." v-model="searchQuery"
                         @input="handleSearch">
-                    <button class="btn btn-primary" type="button">
+                    <button class="btn btn-primary" type="button" @click="handleSearch">
                         <i class="bi bi-search"></i>
                     </button>
                 </div>
@@ -42,14 +42,14 @@
         </div>
 
         <!-- No Jobs Found -->
-        <div v-else-if="!jobStore.getJobs.length" class="text-center my-5">
+        <div v-else-if="!jobStore.getFilteredJobs.length" class="text-center my-5">
             <h3>No jobs found</h3>
             <p class="text-muted">Try adjusting your search criteria</p>
         </div>
 
         <!-- Jobs List -->
         <div v-else class="row g-4">
-            <div v-for="job in jobStore.getJobs" :key="job.id" class="col-md-6 col-lg-4">
+            <div v-for="job in jobStore.getFilteredJobs" :key="job.id" class="col-md-6 col-lg-4">
                 <div class="card h-100 border-0 shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-3">
@@ -89,7 +89,7 @@
         </div>
 
         <!-- Pagination -->
-        <div v-if="jobStore.getTotalPages > 1" class="d-flex justify-content-center mt-5">
+        <div v-if="jobStore.getFilteredJobs.length > itemsPerPage" class="d-flex justify-content-center mt-5">
             <nav aria-label="Page navigation">
                 <ul class="pagination">
                     <li class="page-item" :class="{ disabled: jobStore.getCurrentPage === 1 }">
@@ -126,19 +126,20 @@ export default {
             searchQuery: '',
             selectedType: '',
             selectedLocation: '',
-            searchTimeout: null
+            searchTimeout: null,
+            itemsPerPage: 9
         };
     },
 
     computed: {
         locations() {
-            const uniqueLocations = new Set(this.jobStore.getJobs.map(job => job.location));
-            return Array.from(uniqueLocations);
+            return Array.from(new Set(this.jobStore.getJobs.map(job => job.location)));
         }
     },
 
     methods: {
         getJobTypeClass(type) {
+            if (!type) return 'bg-secondary';
             const classes = {
                 'full-time': 'bg-success',
                 'part-time': 'bg-info',
@@ -148,6 +149,7 @@ export default {
         },
 
         formatSalary(salary) {
+            if (!salary) return 'Not specified';
             return new Intl.NumberFormat('en-US', {
                 style: 'currency',
                 currency: 'USD',
@@ -156,6 +158,7 @@ export default {
         },
 
         formatDate(date) {
+            if (!date) return 'Not specified';
             return new Date(date).toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'short',
@@ -163,44 +166,62 @@ export default {
             });
         },
 
-        truncateText(text, length) {
+        truncateText(text, length = 150) {
             if (!text) return '';
             return text.length > length ? text.substring(0, length) + '...' : text;
         },
 
-        // Debounced search implementation
         handleSearch() {
-            // Clear any existing timeout
             if (this.searchTimeout) {
                 clearTimeout(this.searchTimeout);
             }
 
-            // Set a new timeout
             this.searchTimeout = setTimeout(async () => {
-                await this.jobStore.fetchJobs(1, {
-                    search: this.searchQuery,
-                    type: this.selectedType,
-                    location: this.selectedLocation
-                });
-            }, 300); // Wait 300ms after last input before searching
+                try {
+                    await this.jobStore.fetchJobs(1, {
+                        search: this.searchQuery.trim(),
+                        type: this.selectedType,
+                        location: this.selectedLocation
+                    });
+                } catch (error) {
+                    console.error('Search failed:', error);
+                }
+            }, 300);
         },
 
         async changePage(page) {
             if (page < 1 || page > this.jobStore.getTotalPages) return;
-            await this.jobStore.fetchJobs(page, {
-                search: this.searchQuery,
-                type: this.selectedType,
-                location: this.selectedLocation
-            });
+            
+            try {
+                await this.jobStore.fetchJobs(page, {
+                    search: this.searchQuery,
+                    type: this.selectedType,
+                    location: this.selectedLocation
+                });
+            } catch (error) {
+                console.error('Page change failed:', error);
+            }
+        }
+    },
+
+    watch: {
+        'selectedType'(newValue) {
+            this.handleSearch();
+        },
+        'selectedLocation'(newValue) {
+            this.handleSearch();
         }
     },
 
     async mounted() {
-        await this.jobStore.fetchJobs();
+        try {
+            await this.jobStore.fetchJobs();
+        } catch (error) {
+            console.error('Initial fetch failed:', error);
+        }
     },
 
     beforeUnmount() {
-        // Clear any existing timeout when component is destroyed
         if (this.searchTimeout) {
             clearTimeout(this.searchTimeout);
         }

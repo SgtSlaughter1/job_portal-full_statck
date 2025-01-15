@@ -40,7 +40,7 @@
                   v-model="formData.description"
                   rows="5"
                   required
-                  placeholder="Describe the role, responsibilities, and requirements"
+                  placeholder="Describe the role and company"
                 ></textarea>
               </div>
 
@@ -52,7 +52,6 @@
                   <option value="full-time">Full Time</option>
                   <option value="part-time">Part Time</option>
                   <option value="contract">Contract</option>
-                  <option value="internship">Internship</option>
                 </select>
               </div>
 
@@ -69,40 +68,16 @@
                 >
               </div>
 
-              <!-- Salary Range -->
-              <div class="row mb-3">
-                <div class="col-md-6">
-                  <label for="min_salary" class="form-label">Minimum Salary</label>
-                  <input
-                    type="number"
-                    class="form-control"
-                    id="min_salary"
-                    v-model="formData.min_salary"
-                    placeholder="e.g., 50000"
-                  >
-                </div>
-                <div class="col-md-6">
-                  <label for="max_salary" class="form-label">Maximum Salary</label>
-                  <input
-                    type="number"
-                    class="form-control"
-                    id="max_salary"
-                    v-model="formData.max_salary"
-                    placeholder="e.g., 80000"
-                  >
-                </div>
-              </div>
-
-              <!-- Required Skills -->
+              <!-- Salary -->
               <div class="mb-3">
-                <label for="required_skills" class="form-label">Required Skills</label>
-                <textarea
+                <label for="salary" class="form-label">Salary</label>
+                <input
+                  type="number"
                   class="form-control"
-                  id="required_skills"
-                  v-model="formData.required_skills"
-                  rows="3"
-                  placeholder="List the required skills (comma separated)"
-                ></textarea>
+                  id="salary"
+                  v-model="formData.salary"
+                  placeholder="e.g., 75000"
+                >
               </div>
 
               <!-- Experience Level -->
@@ -113,18 +88,57 @@
                   <option value="entry">Entry Level</option>
                   <option value="mid">Mid Level</option>
                   <option value="senior">Senior Level</option>
-                  <option value="executive">Executive Level</option>
+                  <option value="lead">Lead</option>
                 </select>
+              </div>
+
+              <!-- Requirements -->
+              <div class="mb-3">
+                <label for="requirements" class="form-label">Requirements*</label>
+                <div v-for="(req, index) in formData.requirements" :key="index" class="d-flex mb-2">
+                  <input
+                    type="text"
+                    class="form-control me-2"
+                    v-model="formData.requirements[index]"
+                    placeholder="Add a requirement"
+                  >
+                  <button type="button" class="btn btn-danger" @click="removeRequirement(index)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+                <button type="button" class="btn btn-secondary" @click="addRequirement">
+                  Add Requirement
+                </button>
+              </div>
+
+              <!-- Responsibilities -->
+              <div class="mb-3">
+                <label for="responsibilities" class="form-label">Responsibilities*</label>
+                <div v-for="(resp, index) in formData.responsibilities" :key="index" class="d-flex mb-2">
+                  <input
+                    type="text"
+                    class="form-control me-2"
+                    v-model="formData.responsibilities[index]"
+                    placeholder="Add a responsibility"
+                  >
+                  <button type="button" class="btn btn-danger" @click="removeResponsibility(index)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+                <button type="button" class="btn btn-secondary" @click="addResponsibility">
+                  Add Responsibility
+                </button>
               </div>
 
               <!-- Deadline -->
               <div class="mb-3">
-                <label for="deadline" class="form-label">Application Deadline</label>
+                <label for="deadline" class="form-label">Application Deadline*</label>
                 <input
                   type="date"
                   class="form-control"
                   id="deadline"
                   v-model="formData.deadline"
+                  required
                 >
               </div>
 
@@ -148,83 +162,93 @@
 </template>
 
 <script>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
 import { useEmployerStore } from '@/stores/employerStore';
 
 export default {
   name: 'PostJob',
   
-  setup() {
-    const router = useRouter();
-    const employerStore = useEmployerStore();
-    const error = ref('');
-    const successMessage = ref('');
-    const isLoading = ref(false);
+  data() {
+    return {
+      employerStore: useEmployerStore(),
+      error: '',
+      successMessage: '',
+      isLoading: false,
+      formData: {
+        title: '',
+        description: '',
+        type: '',
+        location: '',
+        salary: null,
+        experience_level: '',
+        requirements: [''],
+        responsibilities: [''],
+        deadline: '',
+        is_active: true
+      }
+    };
+  },
 
-    const formData = ref({
-      title: '',
-      description: '',
-      type: '',
-      location: '',
-      min_salary: '',
-      max_salary: '',
-      required_skills: '',
-      experience_level: '',
-      deadline: ''
-    });
+  methods: {
+    addRequirement() {
+      this.formData.requirements.push('');
+    },
 
-    const handleSubmit = async () => {
+    removeRequirement(index) {
+      this.formData.requirements.splice(index, 1);
+    },
+
+    addResponsibility() {
+      this.formData.responsibilities.push('');
+    },
+
+    removeResponsibility(index) {
+      this.formData.responsibilities.splice(index, 1);
+    },
+
+    resetForm() {
+      this.formData = {
+        title: '',
+        description: '',
+        type: '',
+        location: '',
+        salary: null,
+        experience_level: '',
+        requirements: [''],
+        responsibilities: [''],
+        deadline: '',
+        is_active: true
+      };
+    },
+
+    async handleSubmit() {
       try {
-        isLoading.value = true;
-        error.value = '';
-        successMessage.value = '';
+        this.isLoading = true;
+        this.error = '';
+        this.successMessage = '';
 
-        // Format skills as array if provided
         const jobData = {
-          ...formData.value,
-          required_skills: formData.value.required_skills
-            ? formData.value.required_skills.split(',').map(skill => skill.trim())
-            : []
+          ...this.formData,
+          requirements: this.formData.requirements.filter(req => req.trim()),
+          responsibilities: this.formData.responsibilities.filter(resp => resp.trim()),
+          salary: this.formData.salary ? parseInt(this.formData.salary) : null
         };
 
-        // Create job
-        const result = await employerStore.createJob(jobData);
+        await this.employerStore.createJob(jobData);
         
-        successMessage.value = 'Job posted successfully!';
-        
-        // Reset form
-        formData.value = {
-          title: '',
-          description: '',
-          type: '',
-          location: '',
-          min_salary: '',
-          max_salary: '',
-          required_skills: '',
-          experience_level: '',
-          deadline: ''
-        };
+        this.successMessage = 'Job posted successfully!';
+        this.resetForm();
 
-        // Redirect to jobs list after a short delay
+        // Redirect after success
         setTimeout(() => {
-          router.push('/jobs');
+          this.$router.push('/jobs');
         }, 2000);
 
       } catch (err) {
-        error.value = err.message || 'Failed to post job. Please try again.';
+        this.error = err.message || 'Failed to post job. Please try again.';
       } finally {
-        isLoading.value = false;
+        this.isLoading = false;
       }
-    };
-
-    return {
-      formData,
-      error,
-      successMessage,
-      isLoading,
-      handleSubmit
-    };
+    }
   }
 };
 </script>

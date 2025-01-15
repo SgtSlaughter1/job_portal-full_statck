@@ -58,11 +58,24 @@
                         <div class="card-body">
                             <h4 class="mb-3">Job Overview</h4>
                             <div class="mb-3">
-                                <p><strong>Employment Type:</strong> {{ job.employmentType }}</p>
-                                <p><strong>Experience Level:</strong> {{ job.experienceLevel }}</p>
-                                <p><strong>Posted Date:</strong> {{ job.postedDate }}</p>
+                                <p><strong>Employment Type:</strong> <span class="badge" :class="getJobTypeClass(job?.employmentType)">{{ job?.employmentType || 'Not specified' }}</span></p>
+                                <p><strong>Experience Level:</strong> <span class="badge bg-info">{{ job?.experienceLevel || 'Not specified' }}</span></p>
+                                <p><strong>Posted Date:</strong> <span>{{ formatDate(job?.postedDate) }}</span></p>
+                                <p><strong>Salary:</strong> <span>{{ formatSalary(job?.salary) }}</span></p>
                             </div>
-                            <BaseButton @click="applyNow" class="w-100 mb-2">Apply Now</BaseButton>
+                            <div v-if="!authStore.isAuthenticated" class="alert alert-info mb-3">
+                                Please login to apply for this job
+                            </div>
+                            <div v-else-if="authStore.userType === 'employer'" class="alert alert-warning mb-3">
+                                Employers cannot apply for jobs
+                            </div>
+                            <BaseButton 
+                                @click="handleApplyClick" 
+                                class="w-100 mb-2"
+                                :disabled="jobStore.isLoading || authStore.userType === 'employer'"
+                            >
+                                {{ getButtonText }}
+                            </BaseButton>
                             <BaseButton @click="$router.push('/jobs')" variant="outline" class="w-100">
                                 Back to Jobs
                             </BaseButton>
@@ -75,9 +88,8 @@
 </template>
 
 <script>
-import { computed, onMounted, onBeforeUnmount } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
 import { useJobStore } from '@/stores/jobs';
+import { useAuthStore } from '@/stores/auth';
 import BaseButton from '@/components/BaseButton.vue';
 
 export default {
@@ -91,72 +103,89 @@ export default {
             required: true
         }
     },
-    setup(props) {
-        const route = useRoute();
-        const router = useRouter();
-        const jobStore = useJobStore();
 
-        const job = computed(() => jobStore.getCurrentJob);
+    data() {
+        return {
+            jobStore: useJobStore(),
+            authStore: useAuthStore()
+        };
+    },
 
-        const getJobTypeClass = (type) => {
+    computed: {
+        job() {
+            return this.jobStore.getCurrentJob;
+        },
+        getButtonText() {
+            if (this.jobStore.isLoading) return 'Loading...';
+            if (!this.authStore.isAuthenticated) return 'Login to Apply';
+            if (this.authStore.userType === 'employer') return 'Employers Cannot Apply';
+            return 'Apply Now';
+        }
+    },
+
+    methods: {
+        getJobTypeClass(type) {
+            if (!type) return 'bg-secondary';
+            
             const classes = {
                 'full-time': 'bg-success',
                 'part-time': 'bg-info',
-                'contract': 'bg-warning'
+                'contract': 'bg-warning',
+                'freelance': 'bg-primary',
+                'temporary': 'bg-danger'
             };
             return classes[type.toLowerCase()] || 'bg-secondary';
-        };
+        },
 
-        const formatSalary = (salary) => {
+        formatSalary(salary) {
+            if (!salary) return 'Not specified';
             return new Intl.NumberFormat('en-US', {
                 style: 'currency',
                 currency: 'USD',
                 maximumFractionDigits: 0
             }).format(salary);
-        };
+        },
 
-        const formatDate = (date) => {
+        formatDate(date) {
+            if (!date) return 'Not specified';
             return new Date(date).toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric'
             });
-        };
+        },
 
-        const applyNow = () => {
-            const isLoggedIn = !!localStorage.getItem('username'); // Check if user is logged in
-            if (isLoggedIn) {
-                router.push({ path: '/apply', query: { jobId: props.id } }); // Navigate to application form
+        handleApplyClick() {
+            if (!this.authStore.isAuthenticated) {
+                this.$router.push({
+                    path: '/login',
+                    query: { 
+                        redirect: `/jobs/${this.id}/apply`
+                    }
+                });
+            } else if (this.authStore.userType !== 'jobseeker') {
+                alert('Only job seekers can apply for jobs');
             } else {
-                router.push('/login'); // Redirect to login page
+                this.$router.push(`/jobs/${this.id}/apply`);
             }
-        };
+        }
+    },
 
-        onMounted(async () => {
-            const jobId = props.id || route.params.id;
-            if (!jobId) {
-                router.push('/jobs');
-                return;
-            }
-            
-            await jobStore.fetchJobById(jobId);
-            if (!jobStore.getCurrentJob && !jobStore.isLoading) {
-                router.push('/jobs');
-            }
-        });
+    async mounted() {
+        const jobId = this.id || this.$route.params.id;
+        if (!jobId) {
+            this.$router.push('/jobs');
+            return;
+        }
+        
+        await this.jobStore.fetchJobById(jobId);
+        if (!this.jobStore.getCurrentJob && !this.jobStore.isLoading) {
+            this.$router.push('/jobs');
+        }
+    },
 
-        onBeforeUnmount(() => {
-            jobStore.clearCurrentJob();
-        });
-
-        return {
-            jobStore,
-            job,
-            getJobTypeClass,
-            formatSalary,
-            formatDate,
-            applyNow
-        };
+    beforeUnmount() {
+        this.jobStore.clearCurrentJob();
     }
 };
 </script>

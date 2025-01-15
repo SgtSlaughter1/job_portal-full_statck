@@ -73,6 +73,15 @@ const router = createRouter({
       name: 'JobApplications',
       component: JobApplications,
       meta: { requiresAuth: true, userType: 'jobseeker' }
+    },
+    {
+      path: '/jobs/:id/apply',
+      name: 'ApplicationForm',
+      component: () => import('@/views/ApplicationForm.vue'),
+      meta: {
+        requiresAuth: true,
+        userType: 'jobseeker'
+      }
     }
   ],
 })
@@ -81,19 +90,20 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
   
-  // Check if route requires authentication
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next({ name: 'Login' });
-    return;
-  }
-  
+    // Store the intended destination
+    next({
+      path: '/login',
+      query: { redirect: to.fullPath }
+    });
+  } 
   // Check if route requires specific user type
-  if (to.meta.userType && authStore.userType !== to.meta.userType) {
-    next({ name: 'Home' });
-    return;
+  else if (to.meta.userType && authStore.userType !== to.meta.userType) {
+    next('/unauthorized');
   }
-  
-  next();
+  else {
+    next();
+  }
 });
 
 export default router
