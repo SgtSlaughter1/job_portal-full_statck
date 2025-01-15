@@ -201,9 +201,21 @@ export default {
                 
                 // Show success modal
                 this.showSuccessModal = true;
+                
+                // Reset form
+                this.formData = {
+                    firstName: '',
+                    lastName: '',
+                    email: '',
+                    phone: '',
+                    resume: null,
+                    coverLetter: '',
+                    experience: 0
+                };
             } catch (error) {
-                console.error('Application submission failed:', error);
-                // Handle error (show error message to user)
+                console.error('Error submitting application:', error);
+                // Show error message
+                alert(error.message || 'Failed to submit application. Please try again.');
             } finally {
                 this.isSubmitting = false;
             }

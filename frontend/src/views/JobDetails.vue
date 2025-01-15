@@ -58,11 +58,21 @@
                         <div class="card-body">
                             <h4 class="mb-3">Job Overview</h4>
                             <div class="mb-3">
-                                <p><strong>Employment Type:</strong> {{ job.employmentType }}</p>
-                                <p><strong>Experience Level:</strong> {{ job.experienceLevel }}</p>
-                                <p><strong>Posted Date:</strong> {{ job.postedDate }}</p>
+                                <p><strong>Employment Type:</strong> <span class="badge" :class="getJobTypeClass(job?.employmentType)">{{ job?.employmentType || 'Not specified' }}</span></p>
+                                <p><strong>Experience Level:</strong> <span class="badge bg-info">{{ job?.experienceLevel || 'Not specified' }}</span></p>
+                                <p><strong>Posted Date:</strong> <span>{{ formatDate(job?.postedDate) }}</span></p>
+                                <p><strong>Salary:</strong> <span>{{ formatSalary(job?.salary) }}</span></p>
                             </div>
-                            <BaseButton @click="applyNow" class="w-100 mb-2">Apply Now</BaseButton>
+                            <div v-if="!authStore.isAuthenticated" class="alert alert-info mb-3">
+                                Please login to apply for this job
+                            </div>
+                            <BaseButton 
+                                @click="handleApplyClick" 
+                                class="w-100 mb-2"
+                                :disabled="jobStore.isLoading"
+                            >
+                                {{ jobStore.isLoading ? 'Loading...' : (authStore.isAuthenticated ? 'Apply Now' : 'Login to Apply') }}
+                            </BaseButton>
                             <BaseButton @click="$router.push('/jobs')" variant="outline" class="w-100">
                                 Back to Jobs
                             </BaseButton>
@@ -78,6 +88,7 @@
 import { computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useJobStore } from '@/stores/jobs';
+import { useAuthStore } from '@/stores/auth';
 import BaseButton from '@/components/BaseButton.vue';
 
 export default {
@@ -95,19 +106,25 @@ export default {
         const route = useRoute();
         const router = useRouter();
         const jobStore = useJobStore();
+        const authStore = useAuthStore();
 
         const job = computed(() => jobStore.getCurrentJob);
 
         const getJobTypeClass = (type) => {
+            if (!type) return 'bg-secondary';
+            
             const classes = {
                 'full-time': 'bg-success',
                 'part-time': 'bg-info',
-                'contract': 'bg-warning'
+                'contract': 'bg-warning',
+                'freelance': 'bg-primary',
+                'temporary': 'bg-danger'
             };
             return classes[type.toLowerCase()] || 'bg-secondary';
         };
 
         const formatSalary = (salary) => {
+            if (!salary) return 'Not specified';
             return new Intl.NumberFormat('en-US', {
                 style: 'currency',
                 currency: 'USD',
@@ -116,6 +133,7 @@ export default {
         };
 
         const formatDate = (date) => {
+            if (!date) return 'Not specified';
             return new Date(date).toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'short',
@@ -123,12 +141,21 @@ export default {
             });
         };
 
-        const applyNow = () => {
-            const isLoggedIn = !!localStorage.getItem('username'); // Check if user is logged in
-            if (isLoggedIn) {
-                router.push({ path: '/apply', query: { jobId: props.id } }); // Navigate to application form
+        const handleApplyClick = () => {
+            if (!authStore.isAuthenticated) {
+                // Store current job URL and redirect to login
+                router.push({
+                    path: '/login',
+                    query: { 
+                        redirect: `/jobs/${props.id}/apply`
+                    }
+                });
+            } else if (authStore.userType !== 'jobseeker') {
+                // Handle case where user is logged in but not a job seeker
+                alert('Only job seekers can apply for jobs');
             } else {
-                router.push('/login'); // Redirect to login page
+                // Navigate to application form
+                router.push(`/jobs/${props.id}/apply`);
             }
         };
 
@@ -151,11 +178,12 @@ export default {
 
         return {
             jobStore,
+            authStore,
             job,
             getJobTypeClass,
             formatSalary,
             formatDate,
-            applyNow
+            handleApplyClick
         };
     }
 };

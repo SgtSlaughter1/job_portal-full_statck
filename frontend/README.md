@@ -1,171 +1,196 @@
-# Job Portal Frontend
+# Job Portal Application
 
-A modern job portal application built with Vue 3, featuring a responsive design and comprehensive job search functionality.
+A modern job portal application built with Vue 3 and Laravel that connects job seekers with employers. The platform provides an intuitive interface for job searching, applications, and recruitment management.
 
 ## Features
 
-- **User Authentication**
-  - Registration with role selection (Job Seeker/Employer)
-  - Login with remember me functionality
-  - Password reset capabilities
-  - Protected routes
+### For Job Seekers
+- Browse and search job listings
+- Advanced filtering options
+- Easy job application process
+- Application tracking
+- Profile management
+- Save favorite jobs
 
-- **Job Seeker Features**
-  - Browse job listings with advanced filters
-  - Search jobs by title, location, or company
-  - Apply to jobs with resume/CV upload
-  - Track application status
-  - Save favorite jobs
-  - Profile management
-
-- **Employer Features**
-  - Post new job listings
-  - Manage job postings
-  - View and manage applications
-  - Company profile management
+### For Employers
+- Post and manage job listings
+- Review applications
+- Company profile management
+- Applicant tracking system
 
 ## Tech Stack
 
+### Frontend
 - **Framework:** Vue 3
-- **Build Tool:** Vite
 - **State Management:** Pinia
 - **Routing:** Vue Router
 - **UI Framework:** Bootstrap 5
-- **Icons:** Bootstrap Icons
 - **HTTP Client:** Axios
-- **Form Validation:** Vue Native Validation
+- **Build Tool:** Vite
 
-## Project Structure
+### Backend
+- **Framework:** Laravel 10
+- **Database:** MySQL
+- **Server:** Apache
+- **Authentication:** Sanctum (JWT)
 
-```
-frontend/
-├── public/              # Static assets
-├── src/
-│   ├── assets/         # Images, fonts, etc.
-│   ├── components/     # Reusable Vue components
-│   │   ├── common/    # Common UI components
-│   │   ├── forms/     # Form components
-│   │   └── layout/    # Layout components
-│   ├── layouts/        # Page layouts
-│   ├── router/         # Vue Router configuration
-│   ├── stores/         # Pinia stores
-│   │   ├── auth.js    # Authentication store
-│   │   └── jobs.js    # Jobs store
-│   ├── views/          # Page components
-│   ├── App.vue         # Root component
-│   └── main.js         # Application entry point
-└── package.json        # Dependencies and scripts
-```
+## Prerequisites
 
-## Setup and Installation
+Before running the application, ensure you have the following installed:
+- Node.js (v14 or higher)
+- npm (v6 or higher)
+- PHP (v8.1 or higher)
+- Composer
+- MySQL
+- Apache
 
-1. **Clone the repository**
+## Installation
+
+### Backend Setup
+
+1. Start Apache and MySQL services:
+
+**For XAMPP:**
 ```bash
-git clone <repository-url>
-cd job_portal/frontend
+# Start Apache
+sudo /opt/lampp/lampp startapache
+
+# Start MySQL
+sudo /opt/lampp/lampp startmysql
 ```
 
-2. **Install dependencies**
+**For standalone services:**
 ```bash
+# Start Apache
+sudo service apache2 start
+
+# Start MySQL
+sudo service mysql start
+```
+
+2. Create database:
+```bash
+mysql -u root -p
+CREATE DATABASE job_portal;
+```
+
+3. Configure backend environment:
+```bash
+cd backend
+cp .env.example .env
+```
+
+Edit `.env` file with your database credentials:
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=job_portal
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+
+# Add CORS settings
+CORS_ALLOWED_ORIGINS=http://localhost:5173
+SANCTUM_STATEFUL_DOMAINS=localhost:5173
+SESSION_DOMAIN=localhost
+```
+
+4. Install backend dependencies:
+```bash
+composer install
+```
+
+5. Generate application key:
+```bash
+php artisan key:generate
+```
+
+6. Run migrations and seeders:
+```bash
+php artisan migrate
+php artisan db:seed
+```
+
+7. Start Laravel development server:
+```bash
+php artisan serve
+```
+
+### Frontend Setup
+
+1. Install dependencies:
+```bash
+cd frontend
 npm install
 ```
 
-3. **Configure environment variables**
-Create a `.env` file in the frontend directory:
+2. Configure frontend environment:
+Create `.env` file in the frontend directory:
 ```env
 VITE_API_URL=http://localhost:8000/api
 VITE_APP_NAME="Job Portal"
 ```
 
-4. **Start development server**
+3. Start development server:
 ```bash
 npm run dev
 ```
 
-5. **Build for production**
+4. Build for production:
 ```bash
 npm run build
 ```
 
-## Component Documentation
+## Project Structure
 
-### Views
-
-- **Home.vue**: Landing page with featured jobs and search functionality
-- **Login.vue**: User authentication page
-- **Register.vue**: User registration with role selection
-- **JobListings.vue**: Browse and search job listings
-- **JobDetails.vue**: Detailed view of a job posting
-- **ApplicationForm.vue**: Job application form
-- **Dashboard.vue**: User dashboard (different for job seekers and employers)
-
-### Stores
-
-- **auth.js**: Handles user authentication and profile management
-- **jobs.js**: Manages job listings and applications
-
-### Layouts
-
-- **AuthLayout.vue**: Layout for authentication pages
-- **DefaultLayout.vue**: Main application layout
-- **DashboardLayout.vue**: Dashboard layout with sidebar navigation
-
-## Authentication
-
-The application uses token-based authentication:
-- JWT tokens are stored in localStorage
-- Automatic token refresh
-- Protected route guards
-- Role-based access control
-
-## API Integration
-
-- Base URL configuration in environment variables
-- Axios interceptors for authentication
-- Error handling and response transformation
-- Request/response logging in development
-
-## Styling
-
-- Bootstrap 5 for responsive design
-- Custom SCSS variables for theming
-- Consistent component styling
-- Mobile-first approach
-
-## Performance Optimization
-
-- Lazy loading of routes
-- Component code splitting
-- Asset optimization
-- Caching strategies
-
-## Testing
-
-Run tests with:
-```bash
-npm run test
+```
+project/
+├── frontend/           # Vue frontend application
+│   ├── public/        # Static assets
+│   ├── src/           # Source files
+│   └── package.json   # Frontend dependencies
+│
+├── backend/           # Laravel backend application
+│   ├── app/          # Application logic
+│   ├── database/     # Migrations and seeders
+│   ├── routes/       # API routes
+│   └── .env         # Backend environment variables
 ```
 
-## Responsive Design
+## Default Users
 
-The application is fully responsive and tested on:
-- Desktop (1200px+)
-- Tablet (768px - 1199px)
-- Mobile (< 768px)
+After running seeders, you can login with these test accounts:
 
-## Browser Support
+**Employer:**
+- Email: employer@test.com
+- Password: password
 
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
+**Job Seeker:**
+- Email: jobseeker@test.com
+- Password: password
+
+## Common Issues
+
+1. **CORS Issues:**
+   - Ensure your backend `.env` has correct CORS settings
+   - Check frontend API URL matches backend URL
+
+2. **Database Connection:**
+   - Verify MySQL service is running
+   - Check database credentials in `.env`
+   - Ensure database exists
+
+3. **Apache/MySQL Services:**
+   - If using XAMPP, ensure ports aren't conflicting
+   - Check error logs in `/opt/lampp/logs/`
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a new Pull Request
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
 
 

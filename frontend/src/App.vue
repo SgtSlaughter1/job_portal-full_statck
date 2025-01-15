@@ -6,7 +6,7 @@ src/App.vue
     <router-view/>
   </div>
 
-  <Footer />
+  <Footer/>
 </template>
 
 <script>

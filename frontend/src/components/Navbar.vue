@@ -45,11 +45,11 @@
 
                         <!-- Authenticated Links -->
                         <template v-else>
-                            <li class="nav-item">
+                            <!-- <li class="nav-item">
                                 <router-link class="nav-link" to="/dashboard">
                                     <i class="bi bi-speedometer2"></i> Dashboard
                                 </router-link>
-                            </li>
+                            </li> -->
                             <li class="nav-item" v-if="userRole === 'employer'">
                                 <router-link class="nav-link" to="/jobs/create">
                                     <i class="bi bi-plus-circle"></i> Post Job
@@ -106,11 +106,11 @@
 
                     <!-- Authenticated Links -->
                     <template v-else>
-                        <li class="nav-item">
+                        <!-- <li class="nav-item">
                             <router-link class="nav-link" to="/dashboard">
                                 <i class="bi bi-speedometer2"></i> Dashboard
                             </router-link>
-                        </li>
+                        </li> -->
                         <li class="nav-item" v-if="userRole === 'employer'">
                             <router-link class="nav-link" to="/jobs/create">
                                 <i class="bi bi-plus-circle"></i> Post Job
