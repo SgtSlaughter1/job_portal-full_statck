@@ -15,11 +15,11 @@ const safeJSONParse = (key) => {
 
 export const useAuthStore = defineStore('auth', {
     state: () => ({
-        user: safeJSONParse('user'),
+        user: null,
         token: localStorage.getItem('token'),
         loading: false,
         error: null,
-        userType: localStorage.getItem('userType') || null // 'employer' or 'jobseeker'
+        userType: localStorage.getItem('userType')
     }),
 
     getters: {
@@ -32,91 +32,6 @@ export const useAuthStore = defineStore('auth', {
     },
 
     actions: {
-        // Employer registration
-        async registerEmployer(employerData) {
-            this.loading = true;
-            this.error = null;
-            try {
-                const response = await authApi.employerRegister(employerData);
-                const { token, employer } = response.data;
-                
-                this.token = token;
-                this.user = employer;
-                this.userType = 'employer';
-                
-                localStorage.setItem('token', token);
-                localStorage.setItem('user', JSON.stringify(employer));
-                localStorage.setItem('userType', 'employer');
-                
-                return true;
-            } catch (error) {
-                const { message } = handleApiError(error);
-                this.error = message;
-                throw error;
-            } finally {
-                this.loading = false;
-            }
-        },
-
-        // Job seeker registration
-        async registerJobSeeker(jobSeekerData) {
-            this.loading = true;
-            this.error = null;
-            try {
-                const response = await authApi.jobSeekerRegister(jobSeekerData);
-                const { token, job_seeker } = response.data;
-                
-                this.token = token;
-                this.user = job_seeker;
-                this.userType = 'jobseeker';
-                
-                localStorage.setItem('token', token);
-                localStorage.setItem('user', JSON.stringify(job_seeker));
-                localStorage.setItem('userType', 'jobseeker');
-                
-                return true;
-            } catch (error) {
-                const { message } = handleApiError(error);
-                this.error = message;
-                throw error;
-            } finally {
-                this.loading = false;
-            }
-        },
-
-        // Employer login
-        async employerLogin(credentials) {
-            this.loading = true;
-            this.error = null;
-            try {
-                const response = await authApi.employerLogin(credentials);
-                
-                // Check if response has the expected structure
-                if (!response.data?.data?.token || !response.data?.data?.employer) {
-                    throw new Error('Invalid response structure from server');
-                }
-                
-                const { token, employer } = response.data.data;
-                
-                this.token = token;
-                this.user = employer;
-                this.userType = 'employer';
-                
-                localStorage.setItem('token', token);
-                localStorage.setItem('user', JSON.stringify(employer));
-                localStorage.setItem('userType', 'employer');
-                
-                await router.push('/dashboard');
-                return response.data;
-            } catch (error) {
-                const { message } = handleApiError(error);
-                this.error = message;
-                throw error;
-            } finally {
-                this.loading = false;
-            }
-        },
-
         // Job seeker login
         async jobSeekerLogin(credentials) {
             this.loading = true;
@@ -124,20 +39,26 @@ export const useAuthStore = defineStore('auth', {
             try {
                 const response = await authApi.jobSeekerLogin(credentials);
                 
-                // Check if response has the expected structure
                 if (!response.data?.token || !response.data?.job_seeker) {
                     throw new Error('Invalid response structure from server');
                 }
                 
                 const { token, job_seeker } = response.data;
                 
+                // Only store essential data
                 this.token = token;
-                this.user = job_seeker;
                 this.userType = 'jobseeker';
                 
+                // Store minimal data in localStorage
                 localStorage.setItem('token', token);
-                localStorage.setItem('user', JSON.stringify(job_seeker));
                 localStorage.setItem('userType', 'jobseeker');
+
+                // Set user data in state only (not in localStorage)
+                this.user = {
+                    id: job_seeker.id,
+                    name: job_seeker.name,
+                    email: job_seeker.email
+                };
                 
                 await router.push('/dashboard');
                 return response.data;
@@ -150,40 +71,40 @@ export const useAuthStore = defineStore('auth', {
             }
         },
 
-        // Initialize auth state from localStorage
-        initializeAuth() {
+        // Fetch user data from API
+        async fetchUser() {
+            if (!this.token) return;
+            
+            this.loading = true;
             try {
-                const token = localStorage.getItem('token');
-                const userStr = localStorage.getItem('user');
-                const userType = localStorage.getItem('userType');
+                const response = await authApi.getUser();
+                const userData = response.data.data;
+
+                // Store minimal user data in state
+                this.user = {
+                    id: userData.id,
+                    name: userData.name,
+                    email: userData.email,
+                    // Add only essential fields needed for UI
+                    userType: this.userType
+                };
                 
-                if (token && userStr && userType) {
-                    this.token = token;
-                    this.user = JSON.parse(userStr);
-                    this.userType = userType;
-                } else {
-                    // If any required auth data is missing, clear everything
-                    this.clearAuth();
-                }
+                return this.user;
             } catch (error) {
-                console.error('Error initializing auth state:', error);
-                this.clearAuth();
+                const { message } = handleApiError(error);
+                this.error = message;
+                
+                if (error.response?.status === 401) {
+                    await this.logout();
+                }
+                
+                throw error;
+            } finally {
+                this.loading = false;
             }
         },
 
-        // Clear all auth data
-        clearAuth() {
-            this.token = null;
-            this.user = null;
-            this.userType = null;
-            this.error = null;
-            
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            localStorage.removeItem('userType');
-        },
-
-        // Logout
+        // Add back the logout action
         async logout() {
             try {
                 if (this.token) {
@@ -197,35 +118,36 @@ export const useAuthStore = defineStore('auth', {
             }
         },
 
-        // Fetch current user
-        async fetchUser() {
-            if (!this.token) return;
-            
-            this.loading = true;
+        // Add back initializeAuth
+        async initializeAuth() {
             try {
-                const response = await authApi.getUser();
-                this.user = response.data.data;
+                const token = localStorage.getItem('token');
+                const userType = localStorage.getItem('userType');
                 
-                // Update localStorage
-                localStorage.setItem('user', JSON.stringify(this.user));
-                
-                return this.user;
-            } catch (error) {
-                const { message } = handleApiError(error);
-                this.error = message;
-                
-                // If unauthorized, clear auth state
-                if (error.response?.status === 401) {
-                    await this.logout();
+                if (token && userType) {
+                    this.token = token;
+                    this.userType = userType;
+                    await this.fetchUser();
+                } else {
+                    this.clearAuth();
                 }
-                
-                throw error;
-            } finally {
-                this.loading = false;
+            } catch (error) {
+                console.error('Error initializing auth state:', error);
+                this.clearAuth();
             }
         },
 
-        // Clear error
+        clearAuth() {
+            this.token = null;
+            this.user = null;
+            this.userType = null;
+            this.error = null;
+            
+            localStorage.removeItem('token');
+            localStorage.removeItem('userType');
+        },
+
+        // Add back clearError
         clearError() {
             this.error = null;
         }

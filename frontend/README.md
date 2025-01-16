@@ -6,7 +6,7 @@ A modern job portal application built with Vue 3 and Laravel that connects job s
 
 ### For Job Seekers
 - Browse and search job listings
-- Advanced filtering options
+- Filtering options
 - Easy job application process
 - Application tracking
 - Profile management
@@ -32,7 +32,7 @@ A modern job portal application built with Vue 3 and Laravel that connects job s
 - **Framework:** Laravel 10
 - **Database:** MySQL
 - **Server:** Apache
-- **Authentication:** Sanctum (JWT)
+- **Authentication:** Sanctum 
 
 ## Prerequisites
 
@@ -51,34 +51,18 @@ Before running the application, ensure you have the following installed:
 1. Start Apache and MySQL services:
 
 **For XAMPP:**
-```bash
 # Start Apache
-sudo /opt/lampp/lampp startapache
 
 # Start MySQL
-sudo /opt/lampp/lampp startmysql
-```
 
-**For standalone services:**
-```bash
-# Start Apache
-sudo service apache2 start
-
-# Start MySQL
-sudo service mysql start
-```
 
 2. Create database:
-```bash
-mysql -u root -p
-CREATE DATABASE job_portal;
-```
+
+# CREATE DATABASE job_portal;
 
 3. Configure backend environment:
 ```bash
 cd backend
-cp .env.example .env
-```
 
 Edit `.env` file with your database credentials:
 ```env
@@ -93,53 +77,39 @@ DB_PASSWORD=your_password
 CORS_ALLOWED_ORIGINS=http://localhost:5173
 SANCTUM_STATEFUL_DOMAINS=localhost:5173
 SESSION_DOMAIN=localhost
-```
 
 4. Install backend dependencies:
-```bash
 composer install
-```
 
 5. Generate application key:
-```bash
+
 php artisan key:generate
-```
 
 6. Run migrations and seeders:
-```bash
+
 php artisan migrate
 php artisan db:seed
-```
+
 
 7. Start Laravel development server:
-```bash
+
 php artisan serve
-```
+
 
 ### Frontend Setup
 
 1. Install dependencies:
-```bash
+Open a new terminal
 cd frontend
 npm install
 ```
 
-2. Configure frontend environment:
-Create `.env` file in the frontend directory:
-```env
-VITE_API_URL=http://localhost:8000/api
-VITE_APP_NAME="Job Portal"
-```
 
-3. Start development server:
+2. Start development server:
 ```bash
 npm run dev
 ```
 
-4. Build for production:
-```bash
-npm run build
-```
 
 ## Project Structure
 
@@ -159,15 +129,7 @@ project/
 
 ## Default Users
 
-After running seeders, you can login with these test accounts:
-
-**Employer:**
-- Email: employer@test.com
-- Password: password
-
-**Job Seeker:**
-- Email: jobseeker@test.com
-- Password: password
+After running seeders, register then login with the account created 
 
 ## Common Issues
 
