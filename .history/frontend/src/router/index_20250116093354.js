@@ -97,7 +97,11 @@ const routes = [
       userType: 'jobseeker'
     }
   },
-
+  {
+    path: '/unauthorized',
+    name: 'Unauthorized',
+    component: () => import('@/views/Unauthorized.vue')
+  }
 ]
 
 const router = createRouter({

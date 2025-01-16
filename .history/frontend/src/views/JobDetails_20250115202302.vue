@@ -158,11 +158,13 @@ export default {
         handleApplyClick() {
             if (!this.authStore.isAuthenticated) {
                 this.$router.push({
-                    path: '/auth/login',
-                    query: { redirect: `/jobs/${this.id}/apply` }
+                    path: '/login',
+                    query: { 
+                        redirect: `/jobs/${this.id}/apply`
+                    }
                 });
-            } else if (!this.authStore.isJobSeeker) {
-                this.$router.push('/unauthorized');
+            } else if (this.authStore.userType !== 'jobseeker') {
+                alert('Only job seekers can apply for jobs');
             } else {
                 this.$router.push(`/jobs/${this.id}/apply`);
             }

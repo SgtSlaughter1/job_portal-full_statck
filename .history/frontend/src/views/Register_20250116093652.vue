@@ -343,9 +343,7 @@
 
                             <div class="text-center mt-3">
                                 Already have an account? 
-                                <router-link to="/auth/login" class="text-decoration-none">
-                                    Sign in
-                                </router-link>
+                                <router-link to="/login" class="text-primary">Login here</router-link>
                             </div>
                         </form>
                     </div>
@@ -534,12 +532,6 @@ export default defineComponent({
         handleSuccessModalClose() {
             this.showSuccessModal = false;
             this.router.push(this.isEmployer ? '/employer/dashboard' : '/jobseeker/dashboard');
-        }
-    },
-    created() {
-        // Redirect if no account type selected
-        if (!this.$route.query.type) {
-            this.$router.replace('/auth/account-type')
         }
     }
 });

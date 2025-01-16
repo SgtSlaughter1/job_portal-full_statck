@@ -140,7 +140,6 @@
 <script>
 import { useJobStore } from '@/stores/jobs';
 import SuccessModal from '@/components/SuccessModal.vue';
-import { useAuthStore } from '@/stores/auth';
 
 export default {
     name: 'ApplicationForm',
@@ -213,8 +212,6 @@ export default {
                     coverLetter: '',
                     experience: 0
                 };
-
-                await this.$router.push('/profile/applications');
             } catch (error) {
                 console.error('Error submitting application:', error);
                 // Show error message
@@ -233,19 +230,6 @@ export default {
     async mounted() {
         if (!this.job) {
             await this.jobStore.fetchJobById(this.id);
-        }
-    },
-
-    created() {
-        // Check if user is authenticated and is a job seeker
-        const authStore = useAuthStore()
-        if (!authStore.isAuthenticated) {
-            this.$router.push({
-                path: '/auth/login',
-                query: { redirect: `/jobs/${this.$route.params.id}/apply` }
-            })
-        } else if (!authStore.isJobSeeker) {
-            this.$router.push('/unauthorized')
         }
     }
 };
