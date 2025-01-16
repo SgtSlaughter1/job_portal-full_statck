@@ -30,41 +30,40 @@
                         </li>
 
                         <!-- Guest Links -->
-                        <template v-if="!isLoggedIn">
+                        <template v-if="!authStore.isAuthenticated">
                             <li class="nav-item">
-                                <router-link class="nav-link" to="/login">
+                                <router-link class="nav-link" to="/auth/login">
                                     <i class="bi bi-box-arrow-in-right"></i> Login
                                 </router-link>
                             </li>
                             <li class="nav-item">
-                                <router-link class="nav-link" to="/account-type">
+                                <router-link class="nav-link" to="/auth/account-type">
                                     <i class="bi bi-person-plus"></i> Register
                                 </router-link>
                             </li>
                         </template>
 
                         <!-- Authenticated Links -->
-                        <template v-else>
-                            <!-- <li class="nav-item">
-                                <router-link class="nav-link" to="/dashboard">
-                                    <i class="bi bi-speedometer2"></i> Dashboard
-                                </router-link>
-                            </li> -->
-                            <li class="nav-item" v-if="userRole === 'employer'">
-                                <router-link class="nav-link" to="/jobs/create">
-                                    <i class="bi bi-plus-circle"></i> Post Job
-                                </router-link>
-                            </li>
-                            <li class="nav-item" v-else>
-                                <router-link class="nav-link" to="/saved-jobs">
-                                    <i class="bi bi-bookmark"></i> Saved Jobs
-                                </router-link>
-                            </li>
-                            <li class="nav-item" v-if="userRole === 'jobseeker'">
-                                <router-link class="nav-link" to="/applications">
-                                    <i class="bi bi-file-text"></i> My Applications
-                                </router-link>
-                            </li>
+                        <template v-if="authStore.isAuthenticated">
+                            <!-- Employer Links -->
+                            <template v-if="authStore.isEmployer">
+                                <li class="nav-item">
+                                    <router-link class="nav-link" to="/jobs/post">
+                                        <i class="bi bi-plus-circle"></i> Post Job
+                                    </router-link>
+                                </li>
+                            </template>
+
+                            <!-- Job Seeker Links -->
+                            <template v-if="authStore.isJobSeeker">
+                                <li class="nav-item">
+                                    <router-link class="nav-link" to="/profile/applications">
+                                        <i class="bi bi-file-text"></i> My Applications
+                                    </router-link>
+                                </li>
+                            </template>
+
+                            <!-- Common Authenticated Links -->
                             <li class="nav-item">
                                 <router-link class="nav-link" to="/profile">
                                     <i class="bi bi-person-circle"></i> Profile
@@ -91,41 +90,40 @@
                     </li>
 
                     <!-- Guest Links -->
-                    <template v-if="!isLoggedIn">
+                    <template v-if="!authStore.isAuthenticated">
                         <li class="nav-item">
-                            <router-link class="nav-link" to="/login">
+                            <router-link class="nav-link" to="/auth/login">
                                 <i class="bi bi-box-arrow-in-right"></i> Login
                             </router-link>
                         </li>
                         <li class="nav-item">
-                            <router-link class="nav-link" to="/account-type">
+                            <router-link class="nav-link" to="/auth/account-type">
                                 <i class="bi bi-person-plus"></i> Register
                             </router-link>
                         </li>
                     </template>
 
                     <!-- Authenticated Links -->
-                    <template v-else>
-                        <!-- <li class="nav-item">
-                            <router-link class="nav-link" to="/dashboard">
-                                <i class="bi bi-speedometer2"></i> Dashboard
-                            </router-link>
-                        </li> -->
-                        <li class="nav-item" v-if="userRole === 'employer'">
-                            <router-link class="nav-link" to="/jobs/create">
-                                <i class="bi bi-plus-circle"></i> Post Job
-                            </router-link>
-                        </li>
-                        <li class="nav-item" v-else>
-                            <router-link class="nav-link" to="/saved-jobs">
-                                <i class="bi bi-bookmark"></i> Saved Jobs
-                            </router-link>
-                        </li>
-                        <li class="nav-item" v-if="userRole === 'jobseeker'">
-                            <router-link class="nav-link" to="/applications">
-                                <i class="bi bi-file-text"></i> My Applications
-                            </router-link>
-                        </li>
+                    <template v-if="authStore.isAuthenticated">
+                        <!-- Employer Links -->
+                        <template v-if="authStore.isEmployer">
+                            <li class="nav-item">
+                                <router-link class="nav-link" to="/jobs/post">
+                                    <i class="bi bi-plus-circle"></i> Post Job
+                                </router-link>
+                            </li>
+                        </template>
+
+                        <!-- Job Seeker Links -->
+                        <template v-if="authStore.isJobSeeker">
+                            <li class="nav-item">
+                                <router-link class="nav-link" to="/profile/applications">
+                                    <i class="bi bi-file-text"></i> My Applications
+                                </router-link>
+                            </li>
+                        </template>
+
+                        <!-- Common Authenticated Links -->
                         <li class="nav-item">
                             <router-link class="nav-link" to="/profile">
                                 <i class="bi bi-person-circle"></i> Profile
@@ -175,7 +173,7 @@ export default defineComponent({
         async handleLogout() {
             try {
                 await this.authStore.logout();
-                this.router.push('/login');
+                this.router.push('/auth/login');
             } catch (error) {
                 console.error('Error logging out:', error);
             }

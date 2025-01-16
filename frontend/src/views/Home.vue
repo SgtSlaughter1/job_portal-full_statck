@@ -123,10 +123,14 @@ export default {
 
     methods: {
         getJobTypeClass(type) {
+            if (!type) return 'bg-secondary';
+            
             const classes = {
                 'full-time': 'bg-success',
                 'part-time': 'bg-info',
-                'contract': 'bg-warning'
+                'contract': 'bg-warning',
+                'remote': 'bg-primary',
+                'freelance': 'bg-info'
             };
             return classes[type.toLowerCase()] || 'bg-secondary';
         },

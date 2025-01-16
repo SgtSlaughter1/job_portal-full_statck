@@ -1,48 +1,42 @@
 src/App.vue
 <template>
-  <div>
+  <div class="app-container">
     <Navbar />
-    <router-view v-slot="{ Component }">
-      <component :is="Component" />
-    </router-view>
+    <main class="main-content">
+      <router-view v-slot="{ Component }">
+        <transition name="fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
+    </main>
     <Footer />
   </div>
 </template>
 
 <script>
-import { useAuthStore } from '@/stores/auth';
-import Navbar from '@/components/Navbar.vue';
-import Footer from '@/components/Footer.vue';
+import { defineComponent } from 'vue'
+import { useAuthStore } from '@/stores/auth'
+import Navbar from '@/components/Navbar.vue'
+import Footer from '@/components/Footer.vue'
 
-export default {
+export default defineComponent({
   name: 'App',
   
   components: {
     Navbar,
     Footer
   },
-
-  data() {
+  
+  setup() {
+    const authStore = useAuthStore()
+    
+    // Initialize auth state when app starts
+    authStore.initializeAuth()
+    
     return {
-      authStore: useAuthStore()
-    };
-  },
-
-  created() {
-    // Navigation guard
-    this.$router.beforeEach((to, from, next) => {
-      if (to.meta.requiresAuth && !this.authStore.isAuthenticated) {
-        next({
-          path: '/login',
-          query: { redirect: to.fullPath }
-        });
-      } else if (to.meta.userType && this.authStore.userType !== to.meta.userType) {
-        next('/unauthorized');
-      } else {
-        next();
-      }
-    });
+      authStore
+    }
   }
-};
+})
 </script>
 

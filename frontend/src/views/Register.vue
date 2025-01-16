@@ -343,7 +343,9 @@
 
                             <div class="text-center mt-3">
                                 Already have an account? 
-                                <router-link to="/login" class="text-primary">Login here</router-link>
+                                <router-link to="/auth/login" class="text-decoration-none">
+                                    Sign in
+                                </router-link>
                             </div>
                         </form>
                     </div>
@@ -471,6 +473,10 @@ export default defineComponent({
         },
         // Format job seeker data for API
         formatJobSeekerData() {
+            const skills = this.formData.skills
+                ? this.formData.skills.split(',').map(skill => skill.trim()).filter(Boolean)
+                : [];
+                
             return {
                 name: this.formData.name,
                 email: this.formData.email,
@@ -479,22 +485,22 @@ export default defineComponent({
                 password: this.formData.password,
                 password_confirmation: this.formData.password_confirmation,
                 education_level: this.formData.education_level,
-                years_of_experience: parseInt(this.formData.years_of_experience) || 0,
-                skills: this.formData.skills.split(',').map(skill => skill.trim())
+                experience_years: parseInt(this.formData.years_of_experience) || 0,
+                skills: skills
             };
         },
         // Format employer data for API
         formatEmployerData() {
             return {
-                company_name: this.formData.company_name,
-                email: this.formData.email,
-                phone: this.formData.phone,
-                location: this.formData.location,
+                company_name: this.formData.company_name?.trim(),
+                email: this.formData.email?.trim(),
+                phone: this.formData.phone?.trim(),
+                location: this.formData.location?.trim(),
                 password: this.formData.password,
                 password_confirmation: this.formData.password_confirmation,
-                company_size: this.formData.company_size,
-                industry: this.formData.industry,
-                company_description: this.formData.company_description
+                company_size: this.formData.company_size || null, // Handle nullable field
+                industry: this.formData.industry?.trim(),
+                company_description: this.formData.company_description?.trim()
             };
         },
         // Handle form submission
@@ -506,6 +512,8 @@ export default defineComponent({
                 const formattedData = this.isEmployer 
                     ? this.formatEmployerData()
                     : this.formatJobSeekerData();
+
+                console.log('Sending registration data:', formattedData);
 
                 // Register using the appropriate store method
                 if (this.isEmployer) {
@@ -519,11 +527,20 @@ export default defineComponent({
                 this.resetForm();
 
             } catch (error) {
+                console.error('Registration error:', error);
+                
                 if (error.response?.data?.errors) {
+                    // Handle validation errors
                     this.errors = error.response.data.errors;
-                } else {
+                } else if (error.response?.data?.message) {
+                    // Handle specific error message from backend
                     this.errors = {
-                        general: this.authStore.error || 'An error occurred during registration. Please try again.'
+                        general: error.response.data.message
+                    };
+                } else {
+                    // Handle generic error
+                    this.errors = {
+                        general: 'An error occurred during registration. Please try again.'
                     };
                 }
             }
@@ -532,6 +549,12 @@ export default defineComponent({
         handleSuccessModalClose() {
             this.showSuccessModal = false;
             this.router.push(this.isEmployer ? '/employer/dashboard' : '/jobseeker/dashboard');
+        }
+    },
+    created() {
+        // Redirect if no account type selected
+        if (!this.$route.query.type) {
+            this.$router.replace('/auth/account-type')
         }
     }
 });

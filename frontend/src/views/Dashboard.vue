@@ -53,9 +53,11 @@
                                 <i class="bi" :class="userRole === 'employer' ? 'bi-building' : 'bi-person'"></i>
                                 {{ userRole === 'employer' ? 'Company Profile' : 'Profile' }}
                             </h3>
-                            <button class="btn btn-light btn-sm" @click="$router.push('/edit-profile')">
+                            <router-link 
+                                to="/profile/edit" 
+                                class="btn btn-light btn-sm">
                                 Edit Profile
-                            </button>
+                            </router-link>
                         </div>
                         <div class="card-body">
                             <!-- Employer Profile -->
@@ -133,13 +135,12 @@
                                     </option>
                                 </select>
                                 <!-- New Job Button (for employers) -->
-                                <button 
+                                <router-link 
                                     v-if="userRole === 'employer'"
-                                    class="btn btn-light btn-sm"
-                                    @click="$router.push('/jobs/create')"
-                                >
+                                    to="/jobs/post" 
+                                    class="btn btn-light btn-sm">
                                     <i class="bi bi-plus-lg"></i> New Job
-                                </button>
+                                </router-link>
                             </div>
                         </div>
                         <div class="card-body">

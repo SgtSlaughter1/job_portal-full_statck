@@ -103,10 +103,7 @@
                                 </p>
                                 <p class="mb-0">
                                     Don't have an account? 
-                                    <router-link 
-                                        :to="{ path: '/register', query: { type: isEmployer ? 'employer' : 'seeker' }}" 
-                                        class="text-decoration-none"
-                                    >
+                                    <router-link to="/auth/account-type" class="text-decoration-none">
                                         Sign up
                                     </router-link>
                                 </p>
@@ -178,7 +175,7 @@ export default {
 
                 // Handle redirect after successful login
                 const redirectPath = this.$route.query.redirect || '/profile';
-                this.$router.push(redirectPath);
+                await this.$router.push(redirectPath);
 
             } catch (error) {
                 if (error.response?.status === 422) {

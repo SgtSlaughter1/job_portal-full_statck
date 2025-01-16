@@ -51,6 +51,26 @@
                 >
               </div>
 
+              <div class="mb-3">
+                <label for="address" class="form-label">Address</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="address"
+                  v-model="formData.address"
+                >
+              </div>
+
+              <div class="mb-3">
+                <label for="bio" class="form-label">Bio</label>
+                <textarea
+                  class="form-control"
+                  id="bio"
+                  v-model="formData.bio"
+                  rows="4"
+                ></textarea>
+              </div>
+
               <!-- Employer-specific fields -->
               <template v-if="isEmployer">
                 <div class="mb-3">
@@ -61,6 +81,16 @@
                     id="company_name"
                     v-model="formData.company_name"
                     required
+                  >
+                </div>
+
+                <div class="mb-3">
+                  <label for="company_website" class="form-label">Company Website</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="company_website"
+                    v-model="formData.company_website"
                   >
                 </div>
 
@@ -112,35 +142,22 @@
                 </div>
 
                 <div class="mb-3">
-                  <label for="education_level" class="form-label">Education Level</label>
-                  <select class="form-select" id="education_level" v-model="formData.education_level">
-                    <option value="">Select education level</option>
-                    <option value="high_school">High School</option>
-                    <option value="bachelors">Bachelor's Degree</option>
-                    <option value="masters">Master's Degree</option>
-                    <option value="phd">PhD</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-
-                <div class="mb-3">
-                  <label for="experience_years" class="form-label">Years of Experience</label>
+                  <label for="experience" class="form-label">Experience</label>
                   <input
-                    type="number"
+                    type="text"
                     class="form-control"
-                    id="experience_years"
-                    v-model="formData.experience_years"
-                    min="0"
+                    id="experience"
+                    v-model="formData.experience"
                   >
                 </div>
 
                 <div class="mb-3">
-                  <label for="current_position" class="form-label">Current Position</label>
+                  <label for="education" class="form-label">Education</label>
                   <input
                     type="text"
                     class="form-control"
-                    id="current_position"
-                    v-model="formData.current_position"
+                    id="education"
+                    v-model="formData.education"
                   >
                 </div>
 
@@ -154,20 +171,6 @@
                     accept=".pdf,.doc,.docx"
                   >
                 </div>
-
-                <div class="mb-3">
-                  <div class="form-check">
-                    <input
-                      type="checkbox"
-                      class="form-check-input"
-                      id="is_available"
-                      v-model="formData.is_available"
-                    >
-                    <label class="form-check-label" for="is_available">
-                      Available for hire
-                    </label>
-                  </div>
-                </div>
               </template>
 
               <!-- Submit Button -->
@@ -175,10 +178,10 @@
                 <button 
                   type="submit" 
                   class="btn btn-primary"
-                  :disabled="isLoading"
+                  :disabled="isSubmitting"
                 >
-                  <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
-                  {{ isLoading ? 'Saving...' : 'Save Changes' }}
+                  <span v-if="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                  {{ isSubmitting ? 'Saving...' : 'Save Changes' }}
                 </button>
               </div>
             </form>
@@ -192,111 +195,113 @@
 <script>
 import { ref, onMounted, computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import { useEmployerStore } from '@/stores/employerStore';
-import { useJobSeekerStore } from '@/stores/jobSeekerStore';
 
 export default {
   name: 'EditProfile',
   
   setup() {
     const authStore = useAuthStore();
-    const employerStore = useEmployerStore();
-    const jobSeekerStore = useJobSeekerStore();
-    
+    const user = authStore.getUser;
     const error = ref('');
     const successMessage = ref('');
-    const isLoading = ref(false);
-    
-    const isEmployer = computed(() => authStore.userType === 'employer');
-    const store = computed(() => isEmployer.value ? employerStore : jobSeekerStore);
+    const isSubmitting = ref(false);
 
+    // Initialize form data with user data
     const formData = ref({
-      name: '',
-      email: '',
-      phone: '',
-      // Employer fields
-      company_name: '',
-      industry: '',
-      company_size: '',
-      company_description: '',
-      // Job seeker fields
-      skills: '',
-      education_level: '',
-      experience_years: '',
-      current_position: '',
-      is_available: false
+      name: user?.name || '',
+      email: user?.email || '',
+      phone: user?.phone || '',
+      address: user?.address || '',
+      bio: user?.bio || '',
+      // Job seeker specific fields
+      skills: user?.skills || '',
+      experience: user?.experience || '',
+      education: user?.education || '',
+      resume: null,
+      // Employer specific fields
+      company_name: user?.company_name || '',
+      company_website: user?.company_website || '',
+      industry: user?.industry || '',
+      company_size: user?.company_size || '',
+      company_description: user?.company_description || ''
     });
+
+    // Prefill form data when component mounts
+    onMounted(async () => {
+      try {
+        // Fetch fresh user data
+        await authStore.fetchUser();
+        const freshUser = authStore.getUser;
+        
+        // Update form data with fresh user data
+        if (freshUser) {
+          formData.value = {
+            ...formData.value,
+            name: freshUser.name || formData.value.name,
+            email: freshUser.email || formData.value.email,
+            phone: freshUser.phone || formData.value.phone,
+            address: freshUser.address || formData.value.address,
+            bio: freshUser.bio || formData.value.bio,
+            // Job seeker specific fields
+            skills: freshUser.skills || formData.value.skills,
+            experience: freshUser.experience || formData.value.experience,
+            education: freshUser.education || formData.value.education,
+            // Employer specific fields
+            company_name: freshUser.company_name || formData.value.company_name,
+            company_website: freshUser.company_website || formData.value.company_website,
+            industry: freshUser.industry || formData.value.industry,
+            company_size: freshUser.company_size || formData.value.company_size,
+            company_description: freshUser.company_description || formData.value.company_description
+          };
+        }
+      } catch (err) {
+        error.value = 'Failed to load user data';
+      }
+    });
+
+    const isEmployer = computed(() => authStore.isEmployer);
+    const isJobSeeker = computed(() => authStore.isJobSeeker);
+
+    const handleSubmit = async () => {
+      try {
+        isSubmitting.value = true;
+        error.value = '';
+        successMessage.value = '';
+
+        // Create FormData for file upload
+        const submitData = new FormData();
+        Object.keys(formData.value).forEach(key => {
+          if (formData.value[key] !== null) {
+            submitData.append(key, formData.value[key]);
+          }
+        });
+
+        // Update profile based on user type
+        if (isEmployer.value) {
+          await authStore.updateEmployerProfile(submitData);
+        } else {
+          await authStore.updateJobSeekerProfile(submitData);
+        }
+
+        successMessage.value = 'Profile updated successfully';
+      } catch (err) {
+        error.value = err.message || 'Failed to update profile';
+      } finally {
+        isSubmitting.value = false;
+      }
+    };
 
     const handleFileUpload = (event) => {
       formData.value.resume = event.target.files[0];
     };
 
-    const loadProfile = async () => {
-      try {
-        isLoading.value = true;
-        const profile = await store.value.fetchProfile();
-        
-        // Update form data based on user type
-        if (isEmployer.value) {
-          Object.assign(formData.value, {
-            name: profile.name,
-            email: profile.email,
-            phone: profile.phone,
-            company_name: profile.company_name,
-            industry: profile.industry,
-            company_size: profile.company_size,
-            company_description: profile.company_description
-          });
-        } else {
-          Object.assign(formData.value, {
-            name: profile.name,
-            email: profile.email,
-            phone: profile.phone,
-            skills: Array.isArray(profile.skills) ? profile.skills.join(', ') : profile.skills,
-            education_level: profile.education_level,
-            experience_years: profile.experience_years,
-            current_position: profile.current_position,
-            is_available: profile.is_available
-          });
-        }
-      } catch (err) {
-        error.value = 'Failed to load profile data';
-      } finally {
-        isLoading.value = false;
-      }
-    };
-
-    const handleSubmit = async () => {
-      try {
-        isLoading.value = true;
-        error.value = '';
-        successMessage.value = '';
-
-        const data = { ...formData.value };
-        
-        // Format data based on user type
-        if (!isEmployer.value) {
-          data.skills = data.skills.split(',').map(skill => skill.trim());
-        }
-
-        // Update profile
-        await store.value.updateProfile(data);
-        successMessage.value = 'Profile updated successfully!';
-      } catch (err) {
-        error.value = err.message || 'Failed to update profile. Please try again.';
-      } finally {
-        isLoading.value = false;
-      }
-    };
-
-    onMounted(loadProfile);
-
     return {
       formData,
       error,
       successMessage,
-      isLoading,
+      isSubmitting,
       isEmployer,
+      isJobSeeker,
       handleSubmit,
       handleFileUpload
     };

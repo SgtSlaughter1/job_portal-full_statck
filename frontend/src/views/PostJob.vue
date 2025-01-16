@@ -163,6 +163,7 @@
 
 <script>
 import { useEmployerStore } from '@/stores/employerStore';
+import { useAuthStore } from '@/stores/auth';
 
 export default {
   name: 'PostJob',
@@ -186,6 +187,19 @@ export default {
         is_active: true
       }
     };
+  },
+
+  created() {
+    // Check if user is authenticated and is an employer
+    const authStore = useAuthStore()
+    if (!authStore.isAuthenticated) {
+      this.$router.push({
+        path: '/auth/login',
+        query: { redirect: '/jobs/post' }
+      })
+    } else if (!authStore.isEmployer) {
+      this.$router.push('/unauthorized')
+    }
   },
 
   methods: {
