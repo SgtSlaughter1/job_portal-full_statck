@@ -12,7 +12,7 @@
                                 <i class="bi bi-person-badge fs-1"></i>
                             </div>
                             <h3 class="card-title mb-3">Job Seeker</h3>
-                            <ul class="feature-list text-start">
+                            <ul class="feature-list text-start"> 
                                 <li>Create your professional profile</li>
                                 <li>Browse and apply to jobs</li>
                                 <li>Track your applications</li>

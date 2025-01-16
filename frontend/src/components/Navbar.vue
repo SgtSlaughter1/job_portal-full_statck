@@ -173,7 +173,7 @@ export default defineComponent({
         async handleLogout() {
             try {
                 await this.authStore.logout();
-                this.router.push('/login');
+                this.router.push('/auth/login');
             } catch (error) {
                 console.error('Error logging out:', error);
             }

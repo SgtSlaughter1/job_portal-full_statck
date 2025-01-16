@@ -30,23 +30,13 @@
                             <!-- Personal Information -->
                             <h5 class="mb-3">Personal Information</h5>
                             <div class="row g-3 mb-4">
-                                <div class="col-md-6">
-                                    <label for="firstName" class="form-label">First Name</label>
+                                <div class="col-12">
+                                    <label for="name" class="form-label">Full Name</label>
                                     <input 
                                         type="text" 
                                         class="form-control" 
-                                        id="firstName"
-                                        v-model="formData.firstName"
-                                        required
-                                    >
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="lastName" class="form-label">Last Name</label>
-                                    <input 
-                                        type="text" 
-                                        class="form-control" 
-                                        id="lastName"
-                                        v-model="formData.lastName"
+                                        id="name"
+                                        v-model="formData.name"
                                         required
                                     >
                                 </div>
@@ -151,22 +141,24 @@ export default {
 
     props: {
         id: {
-            type: [Number, String],
+            type: String,
             required: true
         }
     },
 
     data() {
+        const authStore = useAuthStore();
+        const user = authStore.getUser;
+        
         return {
             jobStore: useJobStore(),
             formData: {
-                firstName: '',
-                lastName: '',
-                email: '',
-                phone: '',
-                resume: null,
+                name: user?.name || '',
+                email: user?.email || '',
+                phone: user?.phone || '',
                 coverLetter: '',
-                experience: 0
+                resume: null,
+                jobId: this.id
             },
             isSubmitting: false,
             showSuccessModal: false
@@ -176,6 +168,33 @@ export default {
     computed: {
         job() {
             return this.jobStore.getCurrentJob;
+        },
+        
+        authStore() {
+            return useAuthStore();
+        },
+        
+        user() {
+            return this.authStore.getUser;
+        }
+    },
+
+    async created() {
+        try {
+            // Fetch job details
+            await this.jobStore.fetchJobById(this.id);
+            
+            // Prefill data if user exists
+            if (this.user) {
+                this.formData = {
+                    ...this.formData,
+                    name: this.user.name || this.formData.name,
+                    email: this.user.email || this.formData.email,
+                    phone: this.user.phone || this.formData.phone
+                };
+            }
+        } catch (error) {
+            this.$router.push({ name: 'JobListings' });
         }
     },
 
@@ -194,9 +213,6 @@ export default {
                     formData.append(key, this.formData[key]);
                 });
                 
-                // Add job ID to form data
-                formData.append('jobId', this.id);
-
                 // Submit application
                 await this.jobStore.submitApplication(formData);
                 
@@ -205,13 +221,12 @@ export default {
                 
                 // Reset form
                 this.formData = {
-                    firstName: '',
-                    lastName: '',
-                    email: '',
-                    phone: '',
-                    resume: null,
+                    name: this.user?.name || '',
+                    email: this.user?.email || '',
+                    phone: this.user?.phone || '',
                     coverLetter: '',
-                    experience: 0
+                    resume: null,
+                    jobId: this.id
                 };
 
                 await this.$router.push('/profile/applications');
@@ -230,13 +245,7 @@ export default {
         }
     },
 
-    async mounted() {
-        if (!this.job) {
-            await this.jobStore.fetchJobById(this.id);
-        }
-    },
-
-    created() {
+    mounted() {
         // Check if user is authenticated and is a job seeker
         const authStore = useAuthStore()
         if (!authStore.isAuthenticated) {

@@ -12,57 +12,72 @@
         </div>
 
         <div v-else class="job-details">
-            <!-- Header Section -->
-            <!-- <div class="card mb-4 border-0 shadow-sm">
-                <div class="card-body">
-                    <h1 class="card-title text-primary mb-3">{{ job.jobTitle }}</h1>
-                    <div class="company-info mb-3">
-                        <h5 class="text-muted">{{ job.company }}</h5>
-                    </div>
-                    <div class="badges mb-3">
-                        <span class="badge bg-info me-2">
-                            <i class="bi bi-geo-alt"></i> {{ job.location }}
-                        </span>
-                        <span class="badge bg-success">{{ job.pay }}</span>
-                    </div>
-                </div>
-            </div> -->
-
-            <!-- Details Section -->
             <div class="row">
                 <div class="col-lg-8">
                     <div class="card border-0 shadow-sm mb-4">
                         <div class="card-body">
-                            <h4 class="mb-4">Job Description</h4>
-                            <p>{{ job.description }}</p>
+                            <div class="d-flex justify-content-between align-items-start mb-4">
+                                <div>
+                                    <h2 class="text-primary mb-2">{{ job.title }}</h2>
+                                    <h5 class="text-muted mb-3">{{ job.employer?.company_name }}</h5>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="bi bi-geo-alt me-2"></i>
+                                        {{ job.location || 'Location not specified' }}
+                                    </div>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="bi bi-cash me-2"></i>
+                                        {{ formatSalary(job.salary) }}
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-clock me-2"></i>
+                                        Posted: {{ formatDate(job.created_at) }}
+                                    </div>
+                                </div>
+                                <span :class="getJobTypeClass(job.type)" class="badge">
+                                    {{ job.type || 'Not specified' }}
+                                </span>
+                            </div>
 
-                            <h4 class="mb-3 mt-4">Requirements</h4>
-                            <ul>
-                                <li v-for="(req, index) in job.requirements" :key="index">
-                                    {{ req }}
-                                </li>
-                            </ul>
+                            <h4 class="mb-3">Job Description</h4>
+                            <p class="mb-4 job-description">{{ job.description || 'No description available' }}</p>
 
-                            <h4 class="mb-3 mt-4">Responsibilities</h4>
-                            <ul>
-                                <li v-for="(resp, index) in job.responsibilities" :key="index">
-                                    {{ resp }}
-                                </li>
-                            </ul>
+                            <div v-if="job.requirements?.length" class="mb-4">
+                                <h4 class="mb-3">Requirements</h4>
+                                <ul class="list-unstyled">
+                                    <li v-for="(req, index) in job.requirements" :key="index" class="mb-2">
+                                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                        {{ req }}
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div v-if="job.responsibilities?.length" class="mb-4">
+                                <h4 class="mb-3">Responsibilities</h4>
+                                <ul class="list-unstyled">
+                                    <li v-for="(resp, index) in job.responsibilities" :key="index" class="mb-2">
+                                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                        {{ resp }}
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div v-if="job.benefits?.length" class="mb-4">
+                                <h4 class="mb-3">Benefits</h4>
+                                <ul class="list-unstyled">
+                                    <li v-for="(benefit, index) in job.benefits" :key="index" class="mb-2">
+                                        <i class="bi bi-gift-fill text-primary me-2"></i>
+                                        {{ benefit }}
+                                    </li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-lg-4">
-                    <div class="card border-0 shadow-sm">
+                    <div class="card border-0 shadow-sm sticky-top" style="top: 2rem;">
                         <div class="card-body">
-                            <h4 class="mb-3">Job Overview</h4>
-                            <div class="mb-3">
-                                <p><strong>Employment Type:</strong> <span class="badge" :class="getJobTypeClass(job?.employmentType)">{{ job?.employmentType || 'Not specified' }}</span></p>
-                                <p><strong>Experience Level:</strong> <span class="badge bg-info">{{ job?.experienceLevel || 'Not specified' }}</span></p>
-                                <p><strong>Posted Date:</strong> <span>{{ formatDate(job?.postedDate) }}</span></p>
-                                <p><strong>Salary:</strong> <span>{{ formatSalary(job?.salary) }}</span></p>
-                            </div>
+                            <h4 class="mb-3">Quick Apply</h4>
                             <div v-if="!authStore.isAuthenticated" class="alert alert-info mb-3">
                                 Please login to apply for this job
                             </div>
@@ -130,15 +145,13 @@ export default {
             const classes = {
                 'full-time': 'bg-success',
                 'part-time': 'bg-info',
-                'contract': 'bg-warning',
-                'freelance': 'bg-primary',
-                'temporary': 'bg-danger'
+                'contract': 'bg-warning'
             };
             return classes[type.toLowerCase()] || 'bg-secondary';
         },
 
         formatSalary(salary) {
-            if (!salary) return 'Not specified';
+            if (!salary) return 'Salary not specified';
             return new Intl.NumberFormat('en-US', {
                 style: 'currency',
                 currency: 'USD',
@@ -147,7 +160,7 @@ export default {
         },
 
         formatDate(date) {
-            if (!date) return 'Not specified';
+            if (!date) return 'Date not specified';
             return new Date(date).toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'short',
@@ -157,15 +170,33 @@ export default {
 
         handleApplyClick() {
             if (!this.authStore.isAuthenticated) {
+                // Store the current URL to redirect back after login
+                const returnUrl = `/jobs/${this.id}`;
                 this.$router.push({
-                    path: '/auth/login',
-                    query: { redirect: `/jobs/${this.id}/apply` }
+                    name: 'Login',
+                    query: { 
+                        redirect: returnUrl,
+                        message: 'Please login to apply for this job'
+                    }
                 });
-            } else if (!this.authStore.isJobSeeker) {
-                this.$router.push('/unauthorized');
-            } else {
-                this.$router.push(`/jobs/${this.id}/apply`);
+                return;
             }
+
+            if (this.authStore.userType !== 'jobseeker') {
+                this.$router.push({
+                    name: 'JobSeekerRegister',
+                    query: { 
+                        message: 'Please register as a job seeker to apply for jobs'
+                    }
+                });
+                return;
+            }
+
+            // If authenticated and is a job seeker, proceed to application
+            this.$router.push({
+                name: 'JobApplication',
+                params: { id: this.id }
+            });
         }
     },
 

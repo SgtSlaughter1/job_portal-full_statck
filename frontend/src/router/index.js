@@ -90,47 +90,80 @@ const routes = [
   },
   {
     path: '/jobs/:id/apply',
-    name: 'ApplicationForm',
+    name: 'JobApplication',
     component: ApplicationForm,
+    props: true,
     meta: {
       requiresAuth: true,
       userType: 'jobseeker'
+    },
+    beforeEnter: (to, from, next) => {
+      const authStore = useAuthStore();
+      if (!authStore.isAuthenticated) {
+        next({
+          name: 'Login',
+          query: { 
+            redirect: to.fullPath,
+            message: 'Please login to apply for this job'
+          }
+        });
+      } else if (authStore.userType !== 'jobseeker') {
+        next({
+          name: 'JobSeekerRegister',
+          query: { 
+            message: 'Please register as a job seeker to apply for jobs'
+          }
+        });
+      } else {
+        next();
+      }
     }
   },
 
 ]
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(),
   routes
 })
 
-// Navigation guard
+// Navigation guards
 router.beforeEach((to, from, next) => {
-  const authStore = useAuthStore();
-  
-  // Check if route requires authentication
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    next({
-      path: '/auth/login',
-      query: { redirect: to.fullPath }
-    });
-    return;
+  const authStore = useAuthStore()
+  const isAuthenticated = authStore.isAuthenticated
+  const userType = authStore.userType
+
+  // Handle auth required routes
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    next({ name: 'Login' })
+    return
   }
 
-  // Check if route requires specific user type
-  if (to.meta.userType && authStore.userType !== to.meta.userType) {
-    next('/unauthorized');
-    return;
+  // Handle user type specific routes
+  if (to.meta.userType && to.meta.userType !== userType) {
+    next({ name: 'Profile' })
+    return
   }
 
-  // Handle redirect after login
-  if (to.path === '/auth/login' && authStore.isAuthenticated) {
-    next('/profile');
-    return;
+  // Redirect authenticated users from auth pages
+  if (isAuthenticated && to.path.startsWith('/auth')) {
+    next({ name: 'Profile' })
+    return
   }
 
-  next();
-});
+  // Redirect to home after logout
+  if (to.name === 'Login' && !isAuthenticated && from.name === 'Profile') {
+    next({ name: 'Home' })
+    return
+  }
+
+  // Redirect to profile after login
+  if (to.name === 'Dashboard' && isAuthenticated) {
+    next({ name: 'Profile' })
+    return
+  }
+
+  next()
+})
 
 export default router

@@ -49,9 +49,19 @@ export const authApi = {
     jobSeekerLogin: (credentials) => api.post('/jobseeker/login', credentials),
     jobSeekerRegister: (data) => api.post('/jobseeker/register', data),
     
+    // User profile endpoints - will use the correct endpoint based on user type
+    getUser: () => {
+        const userType = localStorage.getItem('userType');
+        return api.get(`/${userType}/profile`);
+    },
+    updateProfile: (data) => {
+        const userType = localStorage.getItem('userType');
+        return api.post(`/${userType}/profile`, data);
+    },
+    
     // Common endpoints
     logout: () => api.post('/logout'),
-    getUser: () => api.get('/user'),
+    refreshToken: () => api.post('/refresh-token')
 };
 
 // Jobs API service

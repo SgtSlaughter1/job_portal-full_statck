@@ -80,9 +80,25 @@
                         </p>
                     </div>
                     <div class="card-footer bg-white border-0 pt-0">
-                        <router-link :to="{ name: 'JobDetails', params: { id: job.id } }" class="btn btn-primary w-100">
+                        <router-link 
+                            :to="{ 
+                                name: 'JobDetails', 
+                                params: { 
+                                    id: job.id ? job.id.toString() : '' 
+                                }
+                            }" 
+                            class="btn btn-primary w-100"
+                            v-if="job.id"
+                        >
                             View Details
                         </router-link>
+                        <button 
+                            v-else 
+                            class="btn btn-primary w-100" 
+                            disabled
+                        >
+                            Job Details Unavailable
+                        </button>
                     </div>
                 </div>
             </div>
@@ -140,16 +156,19 @@ export default {
     methods: {
         getJobTypeClass(type) {
             if (!type) return 'bg-secondary';
+            
             const classes = {
                 'full-time': 'bg-success',
                 'part-time': 'bg-info',
-                'contract': 'bg-warning'
+                'contract': 'bg-warning',
+                'remote': 'bg-primary',
+                'freelance': 'bg-info'
             };
             return classes[type.toLowerCase()] || 'bg-secondary';
         },
 
         formatSalary(salary) {
-            if (!salary) return 'Not specified';
+            if (!salary) return 'Salary not specified';
             return new Intl.NumberFormat('en-US', {
                 style: 'currency',
                 currency: 'USD',
@@ -158,35 +177,35 @@ export default {
         },
 
         formatDate(date) {
-            if (!date) return 'Not specified';
+            if (!date) return 'Date not specified';
             return new Date(date).toLocaleDateString('en-US', {
                 year: 'numeric',
-                month: 'short',
+                month: 'long',
                 day: 'numeric'
             });
         },
 
         truncateText(text, length = 150) {
             if (!text) return '';
-            return text.length > length ? text.substring(0, length) + '...' : text;
+            return text.length > length ? text.slice(0, length) + '...' : text;
         },
 
-        handleSearch() {
-            if (this.searchTimeout) {
-                clearTimeout(this.searchTimeout);
+        async handleSearch() {
+            try {
+                console.log('Search params:', {
+                    query: this.searchQuery,
+                    type: this.selectedType,
+                    location: this.selectedLocation
+                });
+                
+                await this.jobStore.fetchJobs(1, {
+                    search: this.searchQuery,
+                    type: this.selectedType,
+                    location: this.selectedLocation
+                });
+            } catch (error) {
+                console.error('Search error:', error);
             }
-
-            this.searchTimeout = setTimeout(async () => {
-                try {
-                    await this.jobStore.fetchJobs(1, {
-                        search: this.searchQuery.trim(),
-                        type: this.selectedType,
-                        location: this.selectedLocation
-                    });
-                } catch (error) {
-                    console.error('Search failed:', error);
-                }
-            }, 300);
         },
 
         async changePage(page) {

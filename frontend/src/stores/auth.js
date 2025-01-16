@@ -16,10 +16,10 @@ const safeJSONParse = (key) => {
 export const useAuthStore = defineStore('auth', {
     state: () => ({
         user: null,
-        token: localStorage.getItem('token'),
+        token: null,
         loading: false,
         error: null,
-        userType: localStorage.getItem('userType')
+        userType: null
     }),
 
     getters: {
@@ -45,26 +45,87 @@ export const useAuthStore = defineStore('auth', {
                 
                 const { token, job_seeker } = response.data;
                 
-                // Only store essential data
-                this.token = token;
-                this.userType = 'jobseeker';
+                // Store essential data
+                this.setAuthData(token, job_seeker, 'jobseeker');
+                router.push({ name: 'Profile' });
                 
-                // Store minimal data in localStorage
-                localStorage.setItem('token', token);
-                localStorage.setItem('userType', 'jobseeker');
-
-                // Set user data in state only (not in localStorage)
-                this.user = {
-                    id: job_seeker.id,
-                    name: job_seeker.name,
-                    email: job_seeker.email
-                };
-                
-                await router.push('/dashboard');
                 return response.data;
             } catch (error) {
-                const { message } = handleApiError(error);
-                this.error = message;
+                this.error = handleApiError(error);
+                throw error;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        // Employer login
+        async employerLogin(credentials) {
+            this.loading = true;
+            this.error = null;
+            try {
+                const response = await authApi.employerLogin(credentials);
+                
+                if (!response.data?.token || !response.data?.employer) {
+                    throw new Error('Invalid response structure from server');
+                }
+                
+                const { token, employer } = response.data;
+                
+                // Store essential data
+                this.setAuthData(token, employer, 'employer');
+                router.push({ name: 'Profile' });
+                
+                return response.data;
+            } catch (error) {
+                this.error = handleApiError(error);
+                throw error;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        // Job seeker registration
+        async registerJobSeeker(data) {
+            this.loading = true;
+            this.error = null;
+            try {
+                const response = await authApi.jobSeekerRegister(data);
+                
+                if (!response.data?.token || !response.data?.job_seeker) {
+                    throw new Error('Invalid response structure from server');
+                }
+                
+                const { token, job_seeker } = response.data;
+                this.setAuthData(token, job_seeker, 'jobseeker');
+                router.push({ name: 'Profile' });
+                return response.data;
+            } catch (error) {
+                console.error('Registration error:', error.response?.data || error);
+                this.error = error.response?.data?.message || 'Registration failed. Please try again.';
+                throw error;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        // Employer registration
+        async registerEmployer(data) {
+            this.loading = true;
+            this.error = null;
+            try {
+                const response = await authApi.employerRegister(data);
+                
+                if (!response.data?.token || !response.data?.employer) {
+                    throw new Error('Invalid response structure from server');
+                }
+                
+                const { token, employer } = response.data;
+                this.setAuthData(token, employer, 'employer');
+                router.push({ name: 'Profile' });
+                return response.data;
+            } catch (error) {
+                console.error('Registration error:', error.response?.data || error);
+                this.error = error.response?.data?.message || 'Registration failed. Please try again.';
                 throw error;
             } finally {
                 this.loading = false;
@@ -104,18 +165,37 @@ export const useAuthStore = defineStore('auth', {
             }
         },
 
-        // Add back the logout action
+        // Clear auth data
+        clearAuth() {
+            this.user = null;
+            this.token = null;
+            this.userType = null;
+            this.error = null;
+            localStorage.removeItem('token');
+            localStorage.removeItem('userType');
+            router.push({ name: 'Home' });
+        },
+
+        // Logout action
         async logout() {
             try {
-                if (this.token) {
-                    await authApi.logout();
-                }
+                // Call logout endpoint if needed
+                await authApi.logout();
             } catch (error) {
                 console.error('Logout error:', error);
             } finally {
                 this.clearAuth();
-                await router.push('/login');
             }
+        },
+
+        // Set auth data
+        setAuthData(token, user, type) {
+            this.token = token;
+            this.user = user;
+            this.userType = type;
+            this.error = null;
+            localStorage.setItem('token', token);
+            localStorage.setItem('userType', type);
         },
 
         // Add back initializeAuth
@@ -137,19 +217,34 @@ export const useAuthStore = defineStore('auth', {
             }
         },
 
-        clearAuth() {
-            this.token = null;
-            this.user = null;
-            this.userType = null;
-            this.error = null;
-            
-            localStorage.removeItem('token');
-            localStorage.removeItem('userType');
-        },
-
         // Add back clearError
         clearError() {
             this.error = null;
-        }
+        },
+
+        // Update profile
+        async updateProfile(data) {
+            this.loading = true;
+            this.error = null;
+            try {
+                const response = await authApi.updateProfile(data);
+                this.user = response.data;
+                return response.data;
+            } catch (error) {
+                this.error = handleApiError(error);
+                throw error;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        // Alias methods for profile updates
+        updateJobSeekerProfile(data) {
+            return this.updateProfile(data);
+        },
+
+        updateEmployerProfile(data) {
+            return this.updateProfile(data);
+        },
     }
 });
