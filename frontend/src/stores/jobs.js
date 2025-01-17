@@ -51,7 +51,7 @@ export const useJobStore = defineStore("jobs", {
 
         return filteredJobs;
       } catch (error) {
-        console.error('Error in getFilteredJobs:', error);
+        // Return empty array on error
         return [];
       }
     }
@@ -182,7 +182,6 @@ export const useJobStore = defineStore("jobs", {
         return response.data;
       } catch (error) {
         this.error = error.message || 'Failed to submit application';
-        console.error('Error submitting application:', error);
         throw error;
       } finally {
         this.loading = false;

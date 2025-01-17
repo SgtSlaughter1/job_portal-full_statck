@@ -513,8 +513,6 @@ export default defineComponent({
                     ? this.formatEmployerData()
                     : this.formatJobSeekerData();
 
-                console.log('Sending registration data:', formattedData);
-
                 // Register using the appropriate store method
                 if (this.isEmployer) {
                     await this.authStore.registerEmployer(formattedData);
@@ -527,10 +525,8 @@ export default defineComponent({
                 this.resetForm();
 
             } catch (error) {
-                console.error('Registration error:', error);
-                
+                // Handle validation errors
                 if (error.response?.data?.errors) {
-                    // Handle validation errors
                     this.errors = error.response.data.errors;
                 } else if (error.response?.data?.message) {
                     // Handle specific error message from backend

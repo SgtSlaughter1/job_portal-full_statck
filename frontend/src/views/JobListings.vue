@@ -49,7 +49,7 @@
 
         <!-- Jobs List -->
         <div v-else class="row g-4">
-            <div v-for="job in jobStore.getFilteredJobs" :key="job.id" class="col-md-6 col-lg-4">
+            <div v-for="job in paginatedJobs" :key="job.id" class="col-md-6 col-lg-4">
                 <div class="card h-100 border-0 shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-3">
@@ -105,22 +105,22 @@
         </div>
 
         <!-- Pagination -->
-        <div v-if="jobStore.getFilteredJobs.length > itemsPerPage" class="d-flex justify-content-center mt-5">
+        <div v-if="totalPages > 1" class="d-flex justify-content-center mt-5">
             <nav aria-label="Page navigation">
                 <ul class="pagination">
-                    <li class="page-item" :class="{ disabled: jobStore.getCurrentPage === 1 }">
-                        <a class="page-link" href="#" @click.prevent="changePage(jobStore.getCurrentPage - 1)">
+                    <li class="page-item" :class="{ disabled: currentPage === 1 }">
+                        <a class="page-link" href="#" @click.prevent="changePage(currentPage - 1)">
                             Previous
                         </a>
                     </li>
-                    <li v-for="page in jobStore.getTotalPages" :key="page" class="page-item"
-                        :class="{ active: page === jobStore.getCurrentPage }">
+                    <li v-for="page in displayedPages" :key="page" class="page-item"
+                        :class="{ active: page === currentPage }">
                         <a class="page-link" href="#" @click.prevent="changePage(page)">
                             {{ page }}
                         </a>
                     </li>
-                    <li class="page-item" :class="{ disabled: jobStore.getCurrentPage === jobStore.getTotalPages }">
-                        <a class="page-link" href="#" @click.prevent="changePage(jobStore.getCurrentPage + 1)">
+                    <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                        <a class="page-link" href="#" @click.prevent="changePage(currentPage + 1)">
                             Next
                         </a>
                     </li>
@@ -143,13 +143,62 @@ export default {
             selectedType: '',
             selectedLocation: '',
             searchTimeout: null,
-            itemsPerPage: 9
+            itemsPerPage: 9,
+            currentPage: 1
         };
     },
 
     computed: {
         locations() {
             return Array.from(new Set(this.jobStore.getJobs.map(job => job.location)));
+        },
+
+        filteredJobs() {
+            return this.jobStore.getFilteredJobs;
+        },
+
+        totalPages() {
+            return Math.ceil(this.filteredJobs.length / this.itemsPerPage);
+        },
+
+        paginatedJobs() {
+            const start = (this.currentPage - 1) * this.itemsPerPage;
+            const end = start + this.itemsPerPage;
+            return this.filteredJobs.slice(start, end);
+        },
+
+        displayedPages() {
+            const delta = 2;
+            const range = [];
+            const rangeWithDots = [];
+            let l;
+
+            range.push(1);
+
+            if (this.totalPages <= 1) {
+                return range;
+            }
+
+            for (let i = this.currentPage - delta; i <= this.currentPage + delta; i++) {
+                if (i < this.totalPages && i > 1) {
+                    range.push(i);
+                }
+            }
+            range.push(this.totalPages);
+
+            for (let i of range) {
+                if (l) {
+                    if (i - l === 2) {
+                        rangeWithDots.push(l + 1);
+                    } else if (i - l !== 1) {
+                        rangeWithDots.push('...');
+                    }
+                }
+                rangeWithDots.push(i);
+                l = i;
+            }
+
+            return rangeWithDots;
         }
     },
 
@@ -192,34 +241,24 @@ export default {
 
         async handleSearch() {
             try {
-                console.log('Search params:', {
-                    query: this.searchQuery,
-                    type: this.selectedType,
-                    location: this.selectedLocation
-                });
-                
+                this.currentPage = 1; // Reset to first page on new search
                 await this.jobStore.fetchJobs(1, {
                     search: this.searchQuery,
                     type: this.selectedType,
                     location: this.selectedLocation
                 });
             } catch (error) {
-                console.error('Search error:', error);
+                this.$toast?.error('Failed to search jobs. Please try again.');
             }
         },
 
-        async changePage(page) {
-            if (page < 1 || page > this.jobStore.getTotalPages) return;
-            
-            try {
-                await this.jobStore.fetchJobs(page, {
-                    search: this.searchQuery,
-                    type: this.selectedType,
-                    location: this.selectedLocation
-                });
-            } catch (error) {
-                console.error('Page change failed:', error);
+        changePage(page) {
+            if (page < 1 || page > this.totalPages || page === this.currentPage) {
+                return;
             }
+            
+            this.currentPage = page;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     },
 
