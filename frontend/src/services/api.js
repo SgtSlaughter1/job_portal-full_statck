@@ -11,13 +11,13 @@ const api = axios.create({
 
 // Add request interceptor to add auth token
 api.interceptors.request.use(config => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
 }, error => {
-        return Promise.reject(error);
+    return Promise.reject(error);
 });
 
 // Add response interceptor to handle auth errors
@@ -26,13 +26,13 @@ api.interceptors.response.use(
     error => {
         if (error.response?.status === 401) {
             // Clear auth data on 401 responses
-                    localStorage.removeItem('token');
+            localStorage.removeItem('token');
             localStorage.removeItem('user');
             localStorage.removeItem('userType');
             
             // Redirect to login if not already there
             if (!window.location.pathname.includes('/login')) {
-                    window.location.href = '/login';
+                window.location.href = '/login';
             }
         }
         return Promise.reject(error);
@@ -52,11 +52,14 @@ export const authApi = {
     // User profile endpoints - will use the correct endpoint based on user type
     getUser: () => {
         const userType = localStorage.getItem('userType');
-        return api.get(`/${userType}/profile`);
+        const endpoint = userType === 'employer' ? '/employer/profile' : '/jobseeker/profile';
+        return api.get(endpoint);
     },
+    
     updateProfile: (data) => {
         const userType = localStorage.getItem('userType');
-        return api.post(`/${userType}/profile`, data);
+        const endpoint = userType === 'employer' ? '/employer/profile' : '/jobseeker/profile';
+        return api.post(endpoint, data);
     },
     
     // Common endpoints
@@ -80,7 +83,7 @@ export const jobsApi = {
     // Job categories and filters
     getCategories: () => api.get('/jobs/categories'),
     getLocations: () => api.get('/jobs/locations'),
-    getTypes: () => api.get('/jobs/types'),
+    getTypes: () => api.get('/jobs/types')
 };
 
 // Employer API service
@@ -93,8 +96,8 @@ export const employerApi = {
     getDashboard: () => api.get('/employer/dashboard'),
     
     // Applications endpoints
-    getApplications: () => api.get('/employer/applications'),
-    updateApplication: (id, data) => api.put(`/employer/applications/${id}`, data),
+    getApplications: () => api.get('/applications'),
+    updateApplication: (id, data) => api.put(`/applications/${id}`, data)
 };
 
 // Job Seeker API service
@@ -107,14 +110,21 @@ export const jobSeekerApi = {
     getDashboard: () => api.get('/jobseeker/dashboard'),
     
     // Applications endpoints
-    getApplications: () => api.get('/jobseeker/applications'),
-    applyForJob: (jobId, data) => api.post(`/jobseeker/jobs/${jobId}/apply`, data),
-    withdrawApplication: (id) => api.delete(`/jobseeker/applications/${id}`),
+    getApplications: () => api.get('/applications'),
+    applyForJob: (data) => {
+        const config = {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        };
+        return api.post('/applications', data, config);
+    },
+    withdrawApplication: (id) => api.delete(`/applications/${id}`),
     
     // Saved jobs endpoints
     getSavedJobs: () => api.get('/jobseeker/saved-jobs'),
     saveJob: (jobId) => api.post(`/jobseeker/saved-jobs/${jobId}`),
-    unsaveJob: (jobId) => api.delete(`/jobseeker/saved-jobs/${jobId}`),
+    unsaveJob: (jobId) => api.delete(`/jobseeker/saved-jobs/${jobId}`)
 };
 
 // Error handler helper

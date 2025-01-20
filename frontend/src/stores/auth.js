@@ -1,3 +1,4 @@
+// Auth store for managing authentication state
 import { defineStore } from 'pinia';
 import { authApi, handleApiError } from '@/services/api';
 import router from '@/router';
@@ -15,11 +16,11 @@ const safeJSONParse = (key) => {
 
 export const useAuthStore = defineStore('auth', {
     state: () => ({
-        user: null,
-        token: null,
+        user: safeJSONParse('user'),
+        token: localStorage.getItem('token'),
         loading: false,
         error: null,
-        userType: null
+        userType: localStorage.getItem('userType')
     }),
 
     getters: {
@@ -38,18 +39,17 @@ export const useAuthStore = defineStore('auth', {
             this.error = null;
             try {
                 const response = await authApi.jobSeekerLogin(credentials);
+                const data = response.data?.data || response.data;
                 
-                if (!response.data?.token || !response.data?.job_seeker) {
+                if (!data?.token || !data?.job_seeker) {
                     throw new Error('Invalid response structure from server');
                 }
                 
-                const { token, job_seeker } = response.data;
-                
                 // Store essential data
-                this.setAuthData(token, job_seeker, 'jobseeker');
+                this.setAuthData(data.token, data.job_seeker, 'jobseeker');
                 router.push({ name: 'Profile' });
                 
-                return response.data;
+                return data;
             } catch (error) {
                 this.error = handleApiError(error);
                 throw error;
@@ -64,18 +64,17 @@ export const useAuthStore = defineStore('auth', {
             this.error = null;
             try {
                 const response = await authApi.employerLogin(credentials);
+                const data = response.data?.data || response.data;
                 
-                if (!response.data?.token || !response.data?.employer) {
+                if (!data?.token || !data?.employer) {
                     throw new Error('Invalid response structure from server');
                 }
                 
-                const { token, employer } = response.data;
-                
                 // Store essential data
-                this.setAuthData(token, employer, 'employer');
+                this.setAuthData(data.token, data.employer, 'employer');
                 router.push({ name: 'Profile' });
                 
-                return response.data;
+                return data;
             } catch (error) {
                 this.error = handleApiError(error);
                 throw error;
@@ -90,18 +89,25 @@ export const useAuthStore = defineStore('auth', {
             this.error = null;
             try {
                 const response = await authApi.jobSeekerRegister(data);
+                const responseData = response.data?.data || response.data;
                 
-                if (!response.data?.token || !response.data?.job_seeker) {
+                if (!responseData?.token || !responseData?.job_seeker) {
                     throw new Error('Invalid response structure from server');
                 }
                 
-                const { token, job_seeker } = response.data;
-                this.setAuthData(token, job_seeker, 'jobseeker');
-                router.push({ name: 'Profile' });
-                return response.data;
+                // Clear auth data and redirect to login
+                this.clearAuth();
+                router.push({ 
+                    name: 'Login',
+                    query: { 
+                        message: 'Registration successful! Please login to continue.',
+                        type: 'success'
+                    }
+                });
+                
+                return responseData;
             } catch (error) {
-                console.error('Registration error:', error.response?.data || error);
-                this.error = error.response?.data?.message || 'Registration failed. Please try again.';
+                this.error = handleApiError(error);
                 throw error;
             } finally {
                 this.loading = false;
@@ -114,18 +120,25 @@ export const useAuthStore = defineStore('auth', {
             this.error = null;
             try {
                 const response = await authApi.employerRegister(data);
+                const responseData = response.data?.data || response.data;
                 
-                if (!response.data?.token || !response.data?.employer) {
+                if (!responseData?.token || !responseData?.employer) {
                     throw new Error('Invalid response structure from server');
                 }
                 
-                const { token, employer } = response.data;
-                this.setAuthData(token, employer, 'employer');
-                router.push({ name: 'Profile' });
-                return response.data;
+                // Clear auth data and redirect to login
+                this.clearAuth();
+                router.push({ 
+                    name: 'Login',
+                    query: { 
+                        message: 'Registration successful! Please login to continue.',
+                        type: 'success'
+                    }
+                });
+                
+                return responseData;
             } catch (error) {
-                console.error('Registration error:', error.response?.data || error);
-                this.error = error.response?.data?.message || 'Registration failed. Please try again.';
+                this.error = handleApiError(error);
                 throw error;
             } finally {
                 this.loading = false;
@@ -134,31 +147,23 @@ export const useAuthStore = defineStore('auth', {
 
         // Fetch user data from API
         async fetchUser() {
-            if (!this.token) return;
+            if (!this.token) return null;
             
             this.loading = true;
+            this.error = null;
             try {
                 const response = await authApi.getUser();
-                const userData = response.data.data;
-
-                // Store minimal user data in state
-                this.user = {
-                    id: userData.id,
-                    name: userData.name,
-                    email: userData.email,
-                    // Add only essential fields needed for UI
-                    userType: this.userType
-                };
+                const data = response.data?.data || response.data;
                 
-                return this.user;
-            } catch (error) {
-                const { message } = handleApiError(error);
-                this.error = message;
-                
-                if (error.response?.status === 401) {
-                    await this.logout();
+                if (!data) {
+                    throw new Error('Invalid response structure from server');
                 }
                 
+                this.user = data;
+                return data;
+            } catch (error) {
+                this.error = handleApiError(error);
+                this.clearAuth();
                 throw error;
             } finally {
                 this.loading = false;
@@ -170,21 +175,22 @@ export const useAuthStore = defineStore('auth', {
             this.user = null;
             this.token = null;
             this.userType = null;
-            this.error = null;
             localStorage.removeItem('token');
+            localStorage.removeItem('user');
             localStorage.removeItem('userType');
-            router.push({ name: 'Home' });
         },
 
         // Logout action
         async logout() {
+            this.loading = true;
             try {
-                // Call logout endpoint if needed
                 await authApi.logout();
             } catch (error) {
                 console.error('Logout error:', error);
             } finally {
                 this.clearAuth();
+                this.loading = false;
+                router.push({ name: 'Login' });
             }
         },
 
@@ -193,31 +199,27 @@ export const useAuthStore = defineStore('auth', {
             this.token = token;
             this.user = user;
             this.userType = type;
-            this.error = null;
             localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(user));
             localStorage.setItem('userType', type);
         },
 
-        // Add back initializeAuth
-        async initializeAuth() {
-            try {
-                const token = localStorage.getItem('token');
-                const userType = localStorage.getItem('userType');
-                
-                if (token && userType) {
-                    this.token = token;
-                    this.userType = userType;
-                    await this.fetchUser();
-                } else {
-                    this.clearAuth();
-                }
-            } catch (error) {
-                console.error('Error initializing auth state:', error);
-                this.clearAuth();
+        // Initialize auth state
+        initializeAuth() {
+            const token = localStorage.getItem('token');
+            const user = safeJSONParse('user');
+            const userType = localStorage.getItem('userType');
+
+            if (token && user && userType) {
+                this.token = token;
+                this.user = user;
+                this.userType = userType;
+                return true;
             }
+            return false;
         },
 
-        // Add back clearError
+        // Clear error
         clearError() {
             this.error = null;
         },
@@ -228,23 +230,21 @@ export const useAuthStore = defineStore('auth', {
             this.error = null;
             try {
                 const response = await authApi.updateProfile(data);
-                this.user = response.data;
-                return response.data;
+                const responseData = response.data?.data || response.data;
+                
+                if (!responseData) {
+                    throw new Error('Invalid response structure from server');
+                }
+                
+                this.user = responseData;
+                localStorage.setItem('user', JSON.stringify(responseData));
+                return responseData;
             } catch (error) {
                 this.error = handleApiError(error);
                 throw error;
             } finally {
                 this.loading = false;
             }
-        },
-
-        // Alias methods for profile updates
-        updateJobSeekerProfile(data) {
-            return this.updateProfile(data);
-        },
-
-        updateEmployerProfile(data) {
-            return this.updateProfile(data);
-        },
+        }
     }
 });

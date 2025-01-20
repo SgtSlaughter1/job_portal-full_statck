@@ -31,7 +31,7 @@ class Job extends Model
     protected $casts = [
         'requirements' => 'array',
         'responsibilities' => 'array',
-        'deadline' => 'datetime',
+        'deadline' => 'timestamp',
         'is_active' => 'boolean',
         'salary' => 'integer',
     ];

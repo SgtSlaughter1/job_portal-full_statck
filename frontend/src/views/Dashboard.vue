@@ -166,11 +166,16 @@
                                     </thead>
                                     <tbody>
                                         <tr v-for="item in paginatedItems" :key="item.id">
-                                            <td>{{ item.title }}</td>
+                                            <td>
+                                                <!-- For employers, show job title directly -->
+                                                <span v-if="userRole === 'employer'">{{ item.title }}</span>
+                                                <!-- For job seekers, show job title from nested job object -->
+                                                <span v-else>{{ item.job?.title }}</span>
+                                            </td>
                                             <td>{{ formatDate(item.created_at) }}</td>
                                             <td>
                                                 <span :class="getStatusBadgeClass(item.status)">
-                                                    {{ item.status }}
+                                                    {{ item.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1) : 'N/A' }}
                                                 </span>
                                             </td>
                                             <td>
@@ -178,6 +183,7 @@
                                                     <button 
                                                         class="btn btn-sm btn-outline-primary"
                                                         @click="viewDetails(item)"
+                                                        title="View Details"
                                                     >
                                                         <i class="bi bi-eye"></i>
                                                     </button>
@@ -185,12 +191,14 @@
                                                         v-if="userRole === 'employer'"
                                                         class="btn btn-sm btn-outline-secondary"
                                                         @click="editItem(item)"
+                                                        title="Edit"
                                                     >
                                                         <i class="bi bi-pencil"></i>
                                                     </button>
                                                     <button 
                                                         class="btn btn-sm btn-outline-danger"
                                                         @click="confirmDelete(item)"
+                                                        title="Delete"
                                                     >
                                                         <i class="bi bi-trash"></i>
                                                     </button>
@@ -270,82 +278,99 @@ export default defineComponent({
     
     data() {
         return {
-            deleteModal: null,
-            itemToDelete: null,
-            currentPage: 1,
-            itemsPerPage: 10,
-            sortField: 'created_at',
-            sortDirection: 'desc',
             searchQuery: '',
             filterStatus: '',
-            statusOptions: ['open', 'closed', 'pending', 'approved', 'rejected']
+            sortField: 'created_at',
+            sortDirection: 'desc',
+            currentPage: 1,
+            itemsPerPage: 10,
+            itemToDelete: null,
+            statusOptions: ['pending', 'accepted', 'rejected', 'closed']
         };
     },
 
     computed: {
         store() {
-            return this.userRole === 'employer' ? useEmployerStore() : useJobSeekerStore();
+            return this.userRole === 'employer' ? 
+                useEmployerStore() : 
+                useJobSeekerStore();
         },
-        
+
         authStore() {
             return useAuthStore();
         },
-        
+
         userRole() {
             return this.authStore.userType;
         },
-        
+
         profile() {
-            return this.store.getProfile;
+            return this.authStore.user;
         },
-        
+
         isLoading() {
-            return this.store.getLoadingStatus;
+            return this.store.loading;
         },
-        
+
         error() {
-            return this.store.getError;
+            return this.store.error;
         },
-        
+
         dashboardStats() {
-            return this.store.dashboardStats;
+            return this.store.dashboardStats || {};
         },
-        
+
         filteredItems() {
-            let items = this.store.getItems || [];
-            
+            let items = this.userRole === 'employer' ? 
+                this.store.jobs : 
+                this.store.applications;
+
             // Apply search filter
             if (this.searchQuery) {
                 const query = this.searchQuery.toLowerCase();
-                items = items.filter(item => 
-                    item.title?.toLowerCase().includes(query) ||
-                    item.description?.toLowerCase().includes(query)
-                );
+                items = items.filter(item => {
+                    const title = this.userRole === 'employer' ? 
+                        item.title.toLowerCase() : 
+                        item.job?.title.toLowerCase();
+                    return title.includes(query);
+                });
             }
-            
+
             // Apply status filter
             if (this.filterStatus) {
-                items = items.filter(item => item.status === this.filterStatus);
+                items = items.filter(item => item.status.toLowerCase() === this.filterStatus.toLowerCase());
             }
-            
+
             // Apply sorting
-            items.sort((a, b) => {
-                const aValue = a[this.sortField];
-                const bValue = b[this.sortField];
-                
-                if (this.sortDirection === 'asc') {
-                    return aValue > bValue ? 1 : -1;
-                } else {
-                    return aValue < bValue ? 1 : -1;
-                }
-            });
-            
+            if (this.sortField) {
+                items.sort((a, b) => {
+                    let aValue = a[this.sortField];
+                    let bValue = b[this.sortField];
+
+                    // Handle nested properties for job seekers
+                    if (this.userRole === 'jobseeker' && this.sortField === 'title') {
+                        aValue = a.job?.title || '';
+                        bValue = b.job?.title || '';
+                    }
+
+                    if (typeof aValue === 'string') {
+                        aValue = aValue.toLowerCase();
+                        bValue = bValue.toLowerCase();
+                    }
+
+                    if (aValue < bValue) return this.sortDirection === 'asc' ? -1 : 1;
+                    if (aValue > bValue) return this.sortDirection === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
+
             return items;
         },
         
         paginatedItems() {
-            const start = (this.currentPage - 1) * this.itemsPerPage;
-            return this.filteredItems.slice(start, start + this.itemsPerPage);
+            const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+            const endIndex = startIndex + this.itemsPerPage;
+            return this.filteredItems.slice(startIndex, endIndex);
         },
         
         totalPages() {
@@ -373,8 +398,9 @@ export default defineComponent({
             try {
                 await this.store.fetchDashboardData();
             } catch (error) {
-                console.error('Error loading dashboard data:', error);
-                // If unauthorized, let the API interceptor handle the redirect
+                if (!error.response?.status === 401) {
+                    this.$toast.error('Failed to load dashboard data. Please try again.');
+                }
             }
         },
         
@@ -464,17 +490,20 @@ export default defineComponent({
             try {
                 if (this.userRole === 'employer') {
                     await this.store.deleteJob(this.itemToDelete.id);
+                    this.$toast.success('Job deleted successfully');
                 } else {
                     await this.store.withdrawApplication(this.itemToDelete.id);
+                    this.$toast.success('Application withdrawn successfully');
                 }
                 
-                this.deleteModal.hide();
-                this.itemToDelete = null;
+                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                modal.hide();
                 
-                // Refresh dashboard data
-                await this.loadDashboardData();
+                this.loadDashboardData();
             } catch (error) {
-                console.error('Error deleting item:', error);
+                this.$toast.error('Failed to delete item. Please try again.');
+            } finally {
+                this.itemToDelete = null;
             }
         }
     }

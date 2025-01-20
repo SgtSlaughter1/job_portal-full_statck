@@ -16,18 +16,27 @@ class JobsController extends Controller
      */
     public function index()
     {
-        $jobs = Job::where('is_active', true)
-            ->where('deadline', '>=', now())
-            ->latest()
-            ->paginate(10);
+        try {
+            $jobs = Job::where('is_active', true)
+                ->where('deadline', '>=', now())
+                ->latest()
+                ->paginate(10);
 
-        return response()->json([
-            'data' => $jobs->items(),
-            'total' => $jobs->total(),
-            'per_page' => $jobs->perPage(),
-            'current_page' => $jobs->currentPage(),
-            'last_page' => $jobs->lastPage()
-        ]);
+            return response()->json([
+                'status' => 'success',
+                'data' => $jobs->items(),
+                'total' => $jobs->total(),
+                'per_page' => $jobs->perPage(),
+                'current_page' => $jobs->currentPage(),
+                'last_page' => $jobs->lastPage()
+            ]);
+        } catch (\Exception $e) {
+            //Log::error('Error fetching jobs: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An error occurred while fetching jobs'
+            ], 500);
+        }
     }
 
     /**
@@ -60,7 +69,7 @@ class JobsController extends Controller
     public function show($id)
     {
         $job = Job::findOrFail($id);
-        
+
         return response()->json([
             'data' => $job
         ]);
