@@ -48,14 +48,13 @@
             <div class="row mb-4">
                 <div class="col-12">
                     <div class="card profile-card">
-                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <div
+                            class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                             <h3 class="mb-0">
                                 <i class="bi" :class="userRole === 'employer' ? 'bi-building' : 'bi-person'"></i>
                                 {{ userRole === 'employer' ? 'Company Profile' : 'Profile' }}
                             </h3>
-                            <router-link 
-                                to="/profile/edit" 
-                                class="btn btn-light btn-sm">
+                            <router-link to="/profile/edit" class="btn btn-light btn-sm">
                                 Edit Profile
                             </router-link>
                         </div>
@@ -108,36 +107,28 @@
             <div class="row mb-4">
                 <div class="col-12">
                     <div class="card">
-                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <div
+                            class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                             <h3 class="mb-0">
-                                <i class="bi" :class="userRole === 'employer' ? 'bi-briefcase' : 'bi-file-earmark-text'"></i>
+                                <i class="bi"
+                                    :class="userRole === 'employer' ? 'bi-briefcase' : 'bi-file-earmark-text'"></i>
                                 {{ userRole === 'employer' ? 'Posted Jobs' : 'My Applications' }}
                             </h3>
                             <div class="d-flex gap-2">
                                 <!-- Search Input -->
-                                <input 
-                                    type="text" 
-                                    v-model="searchQuery" 
-                                    class="form-control form-control-sm" 
+                                <input type="text" v-model="searchQuery" class="form-control form-control-sm"
                                     :placeholder="userRole === 'employer' ? 'Search jobs...' : 'Search applications...'"
-                                    @input="handleSearch"
-                                >
+                                    @input="handleSearch">
                                 <!-- Filter Dropdown -->
-                                <select 
-                                    v-model="filterStatus" 
-                                    class="form-select form-select-sm" 
-                                    style="width: auto;"
-                                    @change="handleFilter"
-                                >
+                                <select v-model="filterStatus" class="form-select form-select-sm" style="width: auto;"
+                                    @change="handleFilter">
                                     <option value="">All Status</option>
                                     <option v-for="status in statusOptions" :key="status" :value="status">
                                         {{ status.charAt(0).toUpperCase() + status.slice(1) }}
                                     </option>
                                 </select>
                                 <!-- New Job Button (for employers) -->
-                                <router-link 
-                                    v-if="userRole === 'employer'"
-                                    to="/jobs/post" 
+                                <router-link v-if="userRole === 'employer'" to="/jobs/post"
                                     class="btn btn-light btn-sm">
                                     <i class="bi bi-plus-lg"></i> New Job
                                 </router-link>
@@ -175,33 +166,30 @@
                                             <td>{{ formatDate(item.created_at) }}</td>
                                             <td>
                                                 <span :class="getStatusBadgeClass(item.status)">
-                                                    {{ item.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1) : 'N/A' }}
+                                                    {{ item.status ? item.status.charAt(0).toUpperCase() +
+                                                    item.status.slice(1) : 'N/A' }}
                                                 </span>
                                             </td>
                                             <td>
                                                 <div class="btn-group">
-                                                    <button 
-                                                        class="btn btn-sm btn-outline-primary"
-                                                        @click="viewDetails(item)"
-                                                        title="View Details"
-                                                    >
+                                                    <button class="btn btn-sm btn-outline-primary"
+                                                        @click="viewDetails(item)" title="View Details">
                                                         <i class="bi bi-eye"></i>
                                                     </button>
-                                                    <button 
-                                                        v-if="userRole === 'employer'"
-                                                        class="btn btn-sm btn-outline-secondary"
-                                                        @click="editItem(item)"
-                                                        title="Edit"
-                                                    >
+                                                    <button v-if="userRole === 'employer'"
+                                                        class="btn btn-sm btn-outline-secondary" @click="editItem(item)"
+                                                        title="Edit">
                                                         <i class="bi bi-pencil"></i>
                                                     </button>
-                                                    <button 
-                                                        class="btn btn-sm btn-outline-danger"
-                                                        @click="confirmDelete(item)"
-                                                        title="Delete"
-                                                    >
+                                                    <button class="btn btn-sm btn-outline-danger"
+                                                        @click="confirmDelete(item)" title="Delete">
                                                         <i class="bi bi-trash"></i>
                                                     </button>
+
+                                                    <router-link v-if="userRole === 'employer'"
+                                                        to="/profile/manage-applications" class="btn btn-light btn-sm">
+                                                        View Applications
+                                                    </router-link>
                                                 </div>
                                             </td>
                                         </tr>
@@ -222,12 +210,8 @@
                                             Previous
                                         </a>
                                     </li>
-                                    <li 
-                                        v-for="page in totalPages" 
-                                        :key="page"
-                                        class="page-item"
-                                        :class="{ active: currentPage === page }"
-                                    >
+                                    <li v-for="page in totalPages" :key="page" class="page-item"
+                                        :class="{ active: currentPage === page }">
                                         <a class="page-link" href="#" @click.prevent="changePage(page)">
                                             {{ page }}
                                         </a>
@@ -275,7 +259,7 @@ import { Modal } from 'bootstrap';
 
 export default defineComponent({
     name: 'Dashboard',
-    
+
     data() {
         return {
             searchQuery: '',
@@ -291,8 +275,8 @@ export default defineComponent({
 
     computed: {
         store() {
-            return this.userRole === 'employer' ? 
-                useEmployerStore() : 
+            return this.userRole === 'employer' ?
+                useEmployerStore() :
                 useJobSeekerStore();
         },
 
@@ -321,16 +305,16 @@ export default defineComponent({
         },
 
         filteredItems() {
-            let items = this.userRole === 'employer' ? 
-                this.store.jobs : 
+            let items = this.userRole === 'employer' ?
+                this.store.jobs :
                 this.store.applications;
 
             // Apply search filter
             if (this.searchQuery) {
                 const query = this.searchQuery.toLowerCase();
                 items = items.filter(item => {
-                    const title = this.userRole === 'employer' ? 
-                        item.title.toLowerCase() : 
+                    const title = this.userRole === 'employer' ?
+                        item.title.toLowerCase() :
                         item.job?.title.toLowerCase();
                     return title.includes(query);
                 });
@@ -366,13 +350,13 @@ export default defineComponent({
 
             return items;
         },
-        
+
         paginatedItems() {
             const startIndex = (this.currentPage - 1) * this.itemsPerPage;
             const endIndex = startIndex + this.itemsPerPage;
             return this.filteredItems.slice(startIndex, endIndex);
         },
-        
+
         totalPages() {
             return Math.ceil(this.filteredItems.length / this.itemsPerPage);
         }
@@ -403,15 +387,15 @@ export default defineComponent({
                 }
             }
         },
-        
+
         handleSearch() {
             this.currentPage = 1;
         },
-        
+
         handleFilter() {
             this.currentPage = 1;
         },
-        
+
         sortBy(field) {
             if (field === this.sortField) {
                 this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
@@ -420,12 +404,12 @@ export default defineComponent({
                 this.sortDirection = 'asc';
             }
         },
-        
+
         getSortIcon(field) {
             if (field !== this.sortField) return 'bi-arrow-down-up';
             return this.sortDirection === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down';
         },
-        
+
         getStatIcon(key) {
             const icons = {
                 totalJobs: 'bi-briefcase',
@@ -437,11 +421,11 @@ export default defineComponent({
             };
             return icons[key] || 'bi-graph-up';
         },
-        
+
         formatStatTitle(key) {
             return key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
         },
-        
+
         getStatusBadgeClass(status) {
             const classes = {
                 open: 'bg-success',
@@ -452,41 +436,41 @@ export default defineComponent({
             };
             return `badge ${classes[status] || 'bg-secondary'}`;
         },
-        
+
         formatDate(date) {
             if (!date) return '';
             const options = { year: 'numeric', month: 'short', day: 'numeric' };
             return new Date(date).toLocaleDateString(undefined, options);
         },
-        
+
         changePage(page) {
             if (page >= 1 && page <= this.totalPages) {
                 this.currentPage = page;
             }
         },
-        
+
         viewDetails(item) {
-            const route = this.userRole === 'employer' 
-                ? `/jobs/${item.id}` 
+            const route = this.userRole === 'employer'
+                ? `/jobs/${item.id}`
                 : `/applications/${item.id}`;
             this.$router.push(route);
         },
-        
+
         editItem(item) {
             const route = this.userRole === 'employer'
                 ? `/jobs/${item.id}/edit`
                 : `/applications/${item.id}/edit`;
             this.$router.push(route);
         },
-        
+
         confirmDelete(item) {
             this.itemToDelete = item;
             this.deleteModal.show();
         },
-        
+
         async deleteItem() {
             if (!this.itemToDelete) return;
-            
+
             try {
                 if (this.userRole === 'employer') {
                     await this.store.deleteJob(this.itemToDelete.id);
@@ -495,10 +479,10 @@ export default defineComponent({
                     await this.store.withdrawApplication(this.itemToDelete.id);
                     this.$toast.success('Application withdrawn successfully');
                 }
-                
+
                 const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
                 modal.hide();
-                
+
                 this.loadDashboardData();
             } catch (error) {
                 this.$toast.error('Failed to delete item. Please try again.');
@@ -553,7 +537,7 @@ export default defineComponent({
     .stat-card {
         margin-bottom: 1rem;
     }
-    
+
     .table-responsive {
         font-size: 0.875rem;
     }
