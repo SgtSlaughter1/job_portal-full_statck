@@ -14,24 +14,138 @@ use Illuminate\Support\Facades\Log;
 class ApplicationController extends Controller
 {
     /**
-     * Display a listing of the applications for the authenticated job seeker
+     * Display a listing of the applications 
      */
     public function index(Request $request)
     {
         try {
-            $applications = $request->user()->applications()
-                ->with(['job.employer'])
-                ->latest()
-                ->paginate(10);
+            // Ensure user is authenticated
+            if (!Auth::check()) {
+                Log::warning('Unauthenticated access attempt to applications');
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Authentication required'
+                ], 401);
+            }
 
+            // Validate and sanitize input parameters
+            $validated = $request->validate([
+                'page' => 'sometimes|integer|min:1',
+                'sort' => 'sometimes|string',
+                'order' => 'sometimes|in:asc,desc',
+                'status' => 'sometimes|string',
+                'search' => 'sometimes|string'
+            ]);
+
+            // Get the authenticated user
+            $user = $request->user();
+
+            // Determine query based on user type
+            if ($user instanceof \App\Models\JobSeeker) {
+                // Job Seeker: fetch their own applications
+                $query = $user->applications()
+                    ->with([
+                        'job:id,title,employer_id', 
+                        'job.employer:id,company_name'
+                    ])
+                    ->select([
+                        'id', 
+                        'job_id', 
+                        'status', 
+                        'cover_letter', 
+                        'created_at'
+                    ]);
+            } elseif ($user instanceof \App\Models\Employer) {
+                // Employer: fetch applications for their jobs
+                $query = Application::whereHas('job', function($q) use ($user) {
+                    $q->where('employer_id', $user->id);
+                })
+                ->with([
+                    'job:id,title,employer_id', 
+                    'jobSeeker:id,name,email'
+                ])
+                ->select([
+                    'id', 
+                    'job_id', 
+                    'job_seeker_id',
+                    'status', 
+                    'cover_letter', 
+                    'created_at'
+                ]);
+            } else {
+                // Unsupported user type
+                Log::warning('Unsupported user type accessing applications', [
+                    'user_type' => get_class($user)
+                ]);
+                
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized access'
+                ], 403);
+            }
+
+            // Apply status filter if provided
+            if (!empty($validated['status'] ?? null)) {
+                $query->where('status', $validated['status']);
+            }
+
+            // Apply search filter if provided
+            if (!empty($validated['search'] ?? null)) {
+                $searchTerm = $validated['search'];
+                $query->whereHas('job', function ($q) use ($searchTerm) {
+                    $q->where('title', 'LIKE', "%{$searchTerm}%");
+                });
+            }
+
+            // Apply sorting if provided
+            $sort = $validated['sort'] ?? 'created_at';
+            $order = $validated['order'] ?? 'desc';
+            
+            // Validate sort column to prevent SQL injection
+            $allowedSortColumns = ['id', 'job_id', 'status', 'created_at'];
+            $sort = in_array($sort, $allowedSortColumns) ? $sort : 'created_at';
+            
+            $query->orderBy($sort, $order);
+
+            // Paginate with custom per page setting
+            $applications = $query->paginate(
+                perPage: $request->input('per_page', 10),
+                page: $request->input('page', 1)
+            );
+
+            // Transform the paginated results
             return response()->json([
                 'status' => 'success',
-                'data' => $applications
+                'data' => $applications->items(),
+                'meta' => [
+                    'current_page' => $applications->currentPage(),
+                    'last_page' => $applications->lastPage(),
+                    'per_page' => $applications->perPage(),
+                    'total' => $applications->total()
+                ]
             ]);
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Handle validation errors
+            Log::error('Validation error in applications fetch', [
+                'errors' => $e->errors()
+            ]);
+
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to fetch applications'
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            // Log the error for server-side tracking
+            Log::error('Failed to fetch applications: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unable to retrieve applications. Please try again later.',
+                'error_details' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
     }
@@ -174,6 +288,71 @@ class ApplicationController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to update application status'
+            ], 500);
+        }
+    }
+
+    /**
+     * Update the status of an application
+     */
+    public function updateStatus(Request $request, $id)
+    {
+        try {
+            // Ensure user is authenticated
+            $user = $request->user();
+            if (!$user instanceof \App\Models\Employer) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Unauthorized. Only employers can update application status.'
+                ], 403);
+            }
+
+            // Validate input
+            $validated = $request->validate([
+                'status' => [
+                    'required', 
+                    'in:accepted,rejected,pending'
+                ],
+                'notes' => 'nullable|string|max:1000'
+            ]);
+
+            // Find the application
+            $application = Application::whereHas('job', function($query) use ($user) {
+                $query->where('employer_id', $user->id);
+            })->findOrFail($id);
+
+            // Update application status
+            $application->status = $validated['status'];
+            $application->employer_notes = $validated['notes'] ?? null;
+            $application->save();
+
+            // Log the status change
+            Log::info('Application status updated', [
+                'application_id' => $application->id,
+                'new_status' => $application->status,
+                'employer_id' => $user->id
+            ]);
+
+            // Return updated application
+            return response()->json([
+                'status' => 'success',
+                'data' => $application->load(['job', 'jobSeeker'])
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Application not found or you do not have permission to update it.'
+            ], 404);
+        } catch (\Exception $e) {
+            // Log the error
+            Log::error('Failed to update application status: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Unable to update application status. Please try again later.',
+                'error_details' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
     }
