@@ -16,7 +16,7 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="isLoading" class="text-center my-5">
+    <div v-if="loading" class="text-center my-5">
       <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Loading...</span>
       </div>
@@ -28,7 +28,7 @@
     </div>
 
     <!-- Applications Table -->
-    <div v-if="!isLoading" class="card">
+    <div v-if="!loading" class="card">
       <div class="card-body">
         <div class="table-responsive">
           <table class="table table-hover">
@@ -55,13 +55,33 @@
             </thead>
             <tbody>
               <tr v-for="application in paginatedApplications" :key="application.id">
-                <td>{{ application.job_title }}</td>
-                <td>{{ application.applicant_name }}</td>
+                <td>{{ getApplicationDetails(application).title }}</td>
+                <td>{{ getApplicationDetails(application).company }}</td>
                 <td>{{ formatDate(application.applied_date) }}</td>
                 <td>
-                  <span :class="getStatusBadgeClass(application.status)">
-                    {{ application.status }}
-                  </span>
+                  <div class="d-flex align-items-center">
+                    <span :class="getStatusBadgeClass(application.status)">
+                      {{ application.status }}
+                    </span>
+                    
+                    <!-- Only show for employers with pending applications -->
+                    <div v-if="application.status === 'pending'" class="ms-2">
+                      <button 
+                        class="btn btn-sm btn-success me-1" 
+                        @click="handleApplicationStatus(application, 'accepted')"
+                        title="Accept Application"
+                      >
+                        <i class="bi bi-check-lg"></i>
+                      </button>
+                      <button 
+                        class="btn btn-sm btn-danger" 
+                        @click="handleApplicationStatus(application, 'rejected')"
+                        title="Reject Application"
+                      >
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                    </div>
+                  </div>
                 </td>
                 <td>
                   <div class="btn-group">
@@ -71,22 +91,6 @@
                       title="View Details"
                     >
                       <i class="bi bi-eye"></i>
-                    </button>
-                    <button
-                      v-if="application.status === 'pending'"
-                      class="btn btn-sm btn-success"
-                      @click="handleApplication(application.id, 'accepted')"
-                      title="Accept Application"
-                    >
-                      <i class="bi bi-check-lg"></i>
-                    </button>
-                    <button
-                      v-if="application.status === 'pending'"
-                      class="btn btn-sm btn-danger"
-                      @click="handleApplication(application.id, 'rejected')"
-                      title="Reject Application"
-                    >
-                      <i class="bi bi-x-lg"></i>
                     </button>
                   </div>
                 </td>
@@ -136,15 +140,15 @@
             <div class="row">
               <div class="col-md-6">
                 <h6>Job Details</h6>
-                <p><strong>Title:</strong> {{ selectedApplication.job_title }}</p>
-                <p><strong>Department:</strong> {{ selectedApplication.job_department }}</p>
-                <p><strong>Location:</strong> {{ selectedApplication.job_location }}</p>
+                <p><strong>Title:</strong> {{ selectedApplication.job?.title }}</p>
+                <p><strong>Department:</strong> {{ selectedApplication.job?.department }}</p>
+                <p><strong>Location:</strong> {{ selectedApplication.job?.location }}</p>
               </div>
               <div class="col-md-6">
                 <h6>Applicant Details</h6>
-                <p><strong>Name:</strong> {{ selectedApplication.applicant_name }}</p>
-                <p><strong>Email:</strong> {{ selectedApplication.applicant_email }}</p>
-                <p><strong>Phone:</strong> {{ selectedApplication.applicant_phone }}</p>
+                <p><strong>Name:</strong> {{ selectedApplication.jobSeeker?.name }}</p>
+                <p><strong>Email:</strong> {{ selectedApplication.jobSeeker?.email }}</p>
+                <p><strong>Phone:</strong> {{ selectedApplication.jobSeeker?.phone }}</p>
               </div>
               <div class="col-12 mt-3">
                 <h6>Cover Letter</h6>
@@ -164,17 +168,45 @@
         </div>
       </div>
     </div>
+
+    <!-- Application Notes Modal -->
+    <div class="modal fade" id="applicationNotesModal" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Update Application Status</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="employerNotes">Notes:</label>
+              <textarea class="form-control" id="employerNotes" v-model="employerNotes" rows="5"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" @click="confirmStatusUpdate">Update Status</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import { defineComponent } from 'vue';
-import { useEmployerStore } from '@/stores/employerStore';
+import { useApplicationStore } from '@/stores/applications';
+import { mapActions, mapState, mapGetters } from 'pinia';
 import { Modal } from 'bootstrap';
 
 export default defineComponent({
   name: 'ApplicationsManager',
   
+  setup() {
+    const applicationStore = useApplicationStore();
+    return { applicationStore };
+  },
+
   data() {
     return {
       searchQuery: '',
@@ -183,85 +215,99 @@ export default defineComponent({
       sortField: 'applied_date',
       sortDirection: 'desc',
       selectedApplication: null,
-      applicationModal: null
+      applicationModal: null,
+      searchTimeout: null,
+      statusFilter: '',
+      currentApplication: null,
+      statusToUpdate: null,
+      employerNotes: ''
     };
   },
 
   computed: {
     store() {
-      return useEmployerStore();
+      return this.applicationStore;
     },
 
-    isLoading() {
-      return this.store.getLoadingStatus;
-    },
-
-    error() {
-      return this.store.getError;
-    },
+    ...mapState(useApplicationStore, [
+      'loading',
+      'error'
+    ]),
+    ...mapGetters(useApplicationStore, [
+      'getApplications'
+    ]),
 
     applications() {
-      return this.store.getApplications;
+      const apps = this.store.applications;
+      return Array.isArray(apps) ? apps : (apps?.data || []);
     },
 
     filteredApplications() {
-      let filtered = [...this.applications];
+      const apps = this.applications;
 
-      // Apply search filter
-      if (this.searchQuery) {
-        const query = this.searchQuery.toLowerCase();
-        filtered = filtered.filter(app => 
-          app.job_title.toLowerCase().includes(query) ||
-          app.applicant_name.toLowerCase().includes(query) ||
-          app.status.toLowerCase().includes(query)
-        );
-      }
-
-      // Apply sorting
-      filtered.sort((a, b) => {
-        let compareA = a[this.sortField];
-        let compareB = b[this.sortField];
-
-        if (typeof compareA === 'string') {
-          compareA = compareA.toLowerCase();
-          compareB = compareB.toLowerCase();
+      return apps.filter(application => {
+        const searchTerm = this.searchQuery.toLowerCase();
+        
+        if (application.job) {
+          return (
+            (application.job.title || '').toLowerCase().includes(searchTerm) ||
+            (application.status || '').toLowerCase().includes(searchTerm)
+          );
+        } else if (application.jobSeeker) {
+          return (
+            (application.jobSeeker.name || '').toLowerCase().includes(searchTerm) ||
+            (application.job?.title || '').toLowerCase().includes(searchTerm) ||
+            (application.status || '').toLowerCase().includes(searchTerm)
+          );
         }
 
-        if (compareA < compareB) return this.sortDirection === 'asc' ? -1 : 1;
-        if (compareA > compareB) return this.sortDirection === 'asc' ? 1 : -1;
-        return 0;
+        return false;
       });
-
-      return filtered;
     },
 
     paginatedApplications() {
-      const start = (this.currentPage - 1) * this.itemsPerPage;
-      const end = start + this.itemsPerPage;
-      return this.filteredApplications.slice(start, end);
+      const filtered = this.filteredApplications;
+      const start = (this.currentPage - 1) * 10; 
+      const end = start + 10;
+      return filtered.slice(start, end);
     },
 
     totalPages() {
-      return Math.ceil(this.filteredApplications.length / this.itemsPerPage);
+      const filtered = this.filteredApplications;
+      return Math.ceil(filtered.length / 10); 
     }
   },
 
-  mounted() {
-    this.loadApplications();
-    this.applicationModal = new Modal(document.getElementById('applicationModal'));
-  },
-
   methods: {
+    ...mapActions(useApplicationStore, ['fetchApplications']),
+
     async loadApplications() {
       try {
-        await this.store.fetchDashboardData();
+        this.store.error = null;
+
+        await this.store.fetchApplications(this.currentPage, {
+          status: this.statusFilter,
+          search: this.searchQuery
+        });
       } catch (error) {
-        console.error('Error loading applications:', error);
+        this.store.error = error.message || 'Failed to load applications. Please try again.';
+        console.error('Applications load error:', error);
       }
     },
 
     handleSearch() {
-      this.currentPage = 1;
+      clearTimeout(this.searchTimeout);
+      this.searchTimeout = setTimeout(() => {
+        this.currentPage = 1;
+        this.loadApplications();
+      }, 300);
+    },
+
+    changePage(page) {
+      if (page > 0 && page <= this.totalPages) {
+        this.currentPage = page;
+        this.loadApplications();
+      }
     },
 
     sortBy(field) {
@@ -295,10 +341,22 @@ export default defineComponent({
       });
     },
 
-    changePage(page) {
-      if (page >= 1 && page <= this.totalPages) {
-        this.currentPage = page;
+    getApplicationDetails(application) {
+      if (application.job) {
+        return {
+          title: application.job.title,
+          company: application.job.employer?.company_name || 'Unknown Company'
+        };
       }
+      
+      if (application.jobSeeker) {
+        return {
+          title: application.jobSeeker.name,
+          company: application.job?.title || 'Unknown Job'
+        };
+      }
+
+      return { title: 'Unknown', company: 'Unknown' };
     },
 
     viewApplication(application) {
@@ -313,7 +371,58 @@ export default defineComponent({
       } catch (error) {
         console.error('Error handling application:', error);
       }
+    },
+
+    async handleApplicationStatus(application, status) {
+      try {
+        // Confirm status change
+        const confirmMessage = `Are you sure you want to ${status} this application?`;
+        if (!confirm(confirmMessage)) {
+          return;
+        }
+
+        // Open notes modal for additional context
+        this.currentApplication = application;
+        this.statusToUpdate = status;
+        
+        // Show notes modal
+        const notesModal = new bootstrap.Modal(document.getElementById('applicationNotesModal'));
+        notesModal.show();
+      } catch (error) {
+        console.error('Error preparing application status update:', error);
+      }
+    },
+
+    async confirmStatusUpdate() {
+      try {
+        // Validate notes if needed
+        await this.store.updateApplicationStatus(
+          this.currentApplication.id, 
+          this.statusToUpdate, 
+          this.employerNotes
+        );
+
+        // Close the notes modal
+        const notesModal = bootstrap.Modal.getInstance(document.getElementById('applicationNotesModal'));
+        notesModal.hide();
+
+        // Reset notes and current application
+        this.employerNotes = '';
+        this.currentApplication = null;
+        this.statusToUpdate = null;
+
+        // Optional: Show success message
+        this.$toast.success('Application status updated successfully');
+      } catch (error) {
+        // Show error message
+        this.$toast.error(error.message || 'Failed to update application status');
+      }
     }
+  },
+
+  mounted() {
+    this.loadApplications();
+    this.applicationModal = new Modal(document.getElementById('applicationModal'));
   }
 });
 </script>
