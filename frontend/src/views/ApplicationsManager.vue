@@ -45,7 +45,7 @@
               <tr v-for="application in paginatedApplications" :key="application.id">
                 <td>{{ application.job?.title }}</td>
                 <td>{{ application.job_seeker?.name }}</td>
-                <td>{{ formatDate(selectedApplication.created_at) || 'N/A' }}</td>
+                <td>{{ formatDate(application.created_at) }}</td>
                 <td>
                   <div class="d-flex align-items-center">
                     <span :class="getStatusBadgeClass(application.status)">
@@ -311,6 +311,7 @@ export default defineComponent({
     },
 
     formatDate(date) {
+      if (!date) return 'N/A';
       return new Date(date).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
@@ -398,7 +399,55 @@ export default defineComponent({
         // Show error message
         this.$toast.error(error.message || 'Failed to update application status');
       }
-    }
+    },
+
+    async applyForJob(jobId) {
+      try {
+        this.loading = true;
+        this.error = null;
+
+        // Create FormData object
+        const formData = new FormData();
+        formData.append('job_id', jobId);
+        
+        // Add cover letter if provided
+        if (this.coverLetter) {
+          formData.append('cover_letter', this.coverLetter);
+        }
+        
+        // Add resume file
+        if (this.resumeFile) {
+          formData.append('resume', this.resumeFile);
+        } else {
+          throw new Error('Please select a resume file');
+        }
+
+        // Submit application
+        const response = await jobSeekerApi.applyForJob(formData);
+        
+        // Show success message
+        this.$toast.success('Application submitted successfully');
+        
+        // Refresh applications list
+        await this.fetchApplications();
+        
+        return response.data;
+      } catch (error) {
+        console.error('Application submission failed:', error);
+        
+        // Show error message
+        const errorMessage = error.response?.data?.message 
+          || error.message 
+          || 'Failed to submit application';
+          
+        this.$toast.error(errorMessage);
+        this.error = errorMessage;
+        
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
   },
 
   mounted() {

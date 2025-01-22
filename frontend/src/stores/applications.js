@@ -140,7 +140,32 @@ export const useApplicationStore = defineStore('applications', {
         this.loading = false;
       }
     },
-
+    
+    // Submit a new application
+    async submitApplication(formData) {
+      this.loading = true;
+      this.error = null;
+      try {
+        console.log('Submitting application with formData:', formData);
+        const response = await jobSeekerApi.applyForJob(formData);
+        
+        // Add the new application to the list if successful
+        if (response.data) {
+          this.applications = Array.isArray(this.applications)
+            ? [response.data, ...this.applications]
+            : [response.data];
+        }
+        
+        return response.data;
+      } catch (error) {
+        console.error('Failed to submit application:', error);
+        this.error = error.response?.data?.message || 'Failed to submit application';
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+    
     // Reset store state
     resetState() {
       this.applications = [];

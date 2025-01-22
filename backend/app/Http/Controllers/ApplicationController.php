@@ -156,7 +156,12 @@ class ApplicationController extends Controller
     public function store(Request $request)
     {
         try {
-            Log::info('Application submission started', ['request' => $request->all()]);
+            Log::info('Application submission started', [
+                'request' => $request->all(),
+                'user' => $request->user(),
+                'files' => $request->files->all(),
+                'headers' => $request->headers->all()
+            ]);
             
             $validator = Validator::make($request->all(), [
                 'job_id' => 'required|exists:jobs,id',
@@ -165,20 +170,41 @@ class ApplicationController extends Controller
             ]);
 
             if ($validator->fails()) {
-                Log::error('Validation failed', ['errors' => $validator->errors()]);
+                Log::error('Validation failed', [
+                    'errors' => $validator->errors()->toArray(),
+                    'request_data' => $request->all()
+                ]);
                 return response()->json([
                     'status' => 'error',
+                    'message' => 'Validation failed',
                     'errors' => $validator->errors()
                 ], 422);
             }
 
+            // Ensure user is a job seeker
+            $user = $request->user();
+            if (!$user instanceof \App\Models\JobSeeker) {
+                Log::error('Non-job seeker attempted to apply', [
+                    'user_type' => get_class($user),
+                    'user_id' => $user->id
+                ]);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Only job seekers can apply for jobs'
+                ], 403);
+            }
+
             // Check if user has already applied
             $existingApplication = Application::where('job_id', $request->job_id)
-                ->where('job_seeker_id', $request->user()->id)
+                ->where('job_seeker_id', $user->id)
                 ->first();
 
             if ($existingApplication) {
-                Log::warning('Duplicate application attempt', ['job_id' => $request->job_id, 'user_id' => $request->user()->id]);
+                Log::warning('Duplicate application attempt', [
+                    'job_id' => $request->job_id,
+                    'user_id' => $user->id,
+                    'existing_application' => $existingApplication->toArray()
+                ]);
                 return response()->json([
                     'status' => 'error',
                     'message' => 'You have already applied for this job'
@@ -186,31 +212,68 @@ class ApplicationController extends Controller
             }
 
             // Store resume file
-            Log::info('Storing resume file');
-            $resumePath = $request->file('resume')->store('public/resumes');
-            $resumeUrl = Storage::url($resumePath);
-            Log::info('Resume stored', ['path' => $resumePath, 'url' => $resumeUrl]);
+            try {
+                Log::info('Attempting to store resume file');
+                $resumePath = $request->file('resume')->store('public/resumes');
+                if (!$resumePath) {
+                    throw new \Exception('Failed to store resume file');
+                }
+                $resumeUrl = Storage::url($resumePath);
+                Log::info('Resume stored successfully', [
+                    'path' => $resumePath,
+                    'url' => $resumeUrl
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to store resume file', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Failed to upload resume file'
+                ], 500);
+            }
 
             // Create application
-            $application = Application::create([
-                'job_id' => $request->job_id,
-                'job_seeker_id' => $request->user()->id,
-                'cover_letter' => $request->cover_letter,
-                'resume_url' => $resumeUrl,
-                'status' => 'pending'
-            ]);
+            try {
+                $application = Application::create([
+                    'job_id' => $request->job_id,
+                    'job_seeker_id' => $user->id,
+                    'cover_letter' => $request->cover_letter,
+                    'resume_url' => $resumeUrl,
+                    'status' => 'pending'
+                ]);
 
-            Log::info('Application created successfully', ['application_id' => $application->id]);
+                Log::info('Application created successfully', [
+                    'application_id' => $application->id,
+                    'job_id' => $request->job_id,
+                    'user_id' => $user->id
+                ]);
 
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Application submitted successfully',
-                'data' => $application->load('job.employer')
-            ], 201);
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Application submitted successfully',
+                    'data' => $application->load('job.employer')
+                ], 201);
+            } catch (\Exception $e) {
+                Log::error('Failed to create application record', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                
+                // Clean up the uploaded file if application creation fails
+                if (isset($resumePath)) {
+                    Storage::delete($resumePath);
+                }
+                
+                throw $e;
+            }
         } catch (\Exception $e) {
             Log::error('Application submission failed', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all(),
+                'user' => $request->user()
             ]);
             return response()->json([
                 'status' => 'error',
