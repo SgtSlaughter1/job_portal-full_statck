@@ -55,8 +55,8 @@
             </thead>
             <tbody>
               <tr v-for="application in paginatedApplications" :key="application.id">
-                <td>{{ getApplicationDetails(application).title }}</td>
-                <td>{{ getApplicationDetails(application).company }}</td>
+                <td>{{ application.job?.title }}</td>
+                <td>{{ application.job_seeker?.name }}</td>
                 <td>{{ formatDate(application.applied_date) }}</td>
                 <td>
                   <div class="d-flex align-items-center">
@@ -139,16 +139,20 @@
           <div class="modal-body" v-if="selectedApplication">
             <div class="row">
               <div class="col-md-6">
-                <h6>Job Details</h6>
-                <p><strong>Title:</strong> {{ selectedApplication.job?.title }}</p>
-                <p><strong>Department:</strong> {{ selectedApplication.job?.department }}</p>
-                <p><strong>Location:</strong> {{ selectedApplication.job?.location }}</p>
+                <h6 class="mb-3">Job Details</h6>
+                <p><strong>Title:</strong> {{ selectedApplication.job?.title || 'N/A' }}</p>
+                <p><strong>Company:</strong> {{ selectedApplication.job?.employer?.company_name || 'N/A' }}</p>
+                <p><strong>Industry:</strong> {{ selectedApplication.job?.employer?.industry || 'N/A' }}</p>
+                <p><strong>Location:</strong> {{ selectedApplication.job?.employer?.location || 'N/A' }}</p>
+                <p><strong>Created Date:</strong> {{ selectedApplication.job?.created_date || 'N/A' }}</p>
+                <p><strong>Deadline:</strong> {{ selectedApplication.job?.deadline_date || 'N/A' }}</p>
               </div>
               <div class="col-md-6">
-                <h6>Applicant Details</h6>
-                <p><strong>Name:</strong> {{ selectedApplication.jobSeeker?.name }}</p>
-                <p><strong>Email:</strong> {{ selectedApplication.jobSeeker?.email }}</p>
-                <p><strong>Phone:</strong> {{ selectedApplication.jobSeeker?.phone }}</p>
+                <h6 class="mb-3">Applicant Details</h6>
+                <p><strong>Name:</strong> {{ selectedApplication.job_seeker?.name || 'N/A' }}</p>
+                <p><strong>Email:</strong> {{ selectedApplication.job_seeker?.email || 'N/A' }}</p>
+                <p><strong>Applied Date:</strong> {{ formatDate(selectedApplication.created_at) || 'N/A' }}</p>
+                <p><strong>Status:</strong> <span :class="getStatusBadgeClass(selectedApplication.status)">{{ selectedApplication.status }}</span></p>
               </div>
               <div class="col-12 mt-3">
                 <h6>Cover Letter</h6>
@@ -197,7 +201,7 @@
 import { defineComponent } from 'vue';
 import { useApplicationStore } from '@/stores/applications';
 import { mapActions, mapState, mapGetters } from 'pinia';
-import { Modal } from 'bootstrap';
+import { Modal } from 'bootstrap'
 
 export default defineComponent({
   name: 'ApplicationsManager',
@@ -220,7 +224,8 @@ export default defineComponent({
       statusFilter: '',
       currentApplication: null,
       statusToUpdate: null,
-      employerNotes: ''
+      employerNotes: '',
+      isDebug: true
     };
   },
 
@@ -360,7 +365,11 @@ export default defineComponent({
     },
 
     viewApplication(application) {
+      console.log('Application Data:', application);
       this.selectedApplication = application;
+      if (!this.applicationModal) {
+        this.applicationModal = new Modal(document.getElementById('applicationModal'));
+      }
       this.applicationModal.show();
     },
 
