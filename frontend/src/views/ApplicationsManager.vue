@@ -367,8 +367,9 @@ export default defineComponent({
         this.currentApplication = application;
         this.statusToUpdate = status;
         
-        // Show notes modal
-        const notesModal = new bootstrap.Modal(document.getElementById('applicationNotesModal'));
+        // Show notes modal using imported Modal
+        const modalElement = document.getElementById('applicationNotesModal');
+        const notesModal = new Modal(modalElement);
         notesModal.show();
       } catch (error) {
         console.error('Error preparing application status update:', error);
@@ -385,7 +386,7 @@ export default defineComponent({
         );
 
         // Close the notes modal
-        const notesModal = bootstrap.Modal.getInstance(document.getElementById('applicationNotesModal'));
+        const notesModal = Modal.getInstance(document.getElementById('applicationNotesModal'));
         notesModal.hide();
 
         // Reset notes and current application

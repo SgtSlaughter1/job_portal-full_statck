@@ -107,11 +107,14 @@ export const useApplicationStore = defineStore('applications', {
       this.loading = true;
       this.error = null;
       try {
-        // Call API to update status
-        const response = await employerApi.updateApplicationStatus(applicationId, {
+        // Prepare data object to match backend expectations
+        const data = {
           status,
           notes
-        });
+        };
+
+        // Call API to update status
+        const response = await employerApi.updateApplicationStatus(applicationId, data);
 
         // Update the application in the local store
         const index = this.applications.findIndex(app => app.id === applicationId);
