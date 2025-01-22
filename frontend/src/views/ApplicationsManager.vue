@@ -34,22 +34,10 @@
           <table class="table table-hover">
             <thead>
               <tr>
-                <th @click="sortBy('job_title')">
-                  Job Title
-                  <i :class="getSortIcon('job_title')"></i>
-                </th>
-                <th @click="sortBy('applicant_name')">
-                  Applicant
-                  <i :class="getSortIcon('applicant_name')"></i>
-                </th>
-                <th @click="sortBy('applied_date')">
-                  Applied Date
-                  <i :class="getSortIcon('applied_date')"></i>
-                </th>
-                <th @click="sortBy('status')">
-                  Status
-                  <i :class="getSortIcon('status')"></i>
-                </th>
+                <th>Job Title</th>
+                <th>Applicant</th>
+                <th>Applied Date</th>
+                <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -57,7 +45,7 @@
               <tr v-for="application in paginatedApplications" :key="application.id">
                 <td>{{ application.job?.title }}</td>
                 <td>{{ application.job_seeker?.name }}</td>
-                <td>{{ formatDate(application.applied_date) }}</td>
+                <td>{{ formatDate(selectedApplication.created_at) || 'N/A' }}</td>
                 <td>
                   <div class="d-flex align-items-center">
                     <span :class="getStatusBadgeClass(application.status)">
@@ -216,8 +204,6 @@ export default defineComponent({
       searchQuery: '',
       currentPage: 1,
       itemsPerPage: 10,
-      sortField: 'applied_date',
-      sortDirection: 'desc',
       selectedApplication: null,
       applicationModal: null,
       searchTimeout: null,
@@ -313,20 +299,6 @@ export default defineComponent({
         this.currentPage = page;
         this.loadApplications();
       }
-    },
-
-    sortBy(field) {
-      if (this.sortField === field) {
-        this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-      } else {
-        this.sortField = field;
-        this.sortDirection = 'asc';
-      }
-    },
-
-    getSortIcon(field) {
-      if (this.sortField !== field) return 'bi bi-arrow-down-up';
-      return this.sortDirection === 'asc' ? 'bi bi-arrow-up' : 'bi bi-arrow-down';
     },
 
     getStatusBadgeClass(status) {
