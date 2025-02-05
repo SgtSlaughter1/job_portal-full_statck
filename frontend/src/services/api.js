@@ -121,9 +121,7 @@ export const jobSeekerApi = {
                 (data) => {
                     try {
                         const parsedData = JSON.parse(data);
-                        
-                        // Log full response for debugging
-                        console.log('Applications API Response:', parsedData);
+
 
                         // More detailed error checking
                         if (parsedData.status !== 'success') {

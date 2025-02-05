@@ -338,7 +338,6 @@ export default defineComponent({
     },
 
     viewApplication(application) {
-      console.log('Application Data:', application);
       this.selectedApplication = application;
       if (!this.applicationModal) {
         this.applicationModal = new Modal(document.getElementById('applicationModal'));

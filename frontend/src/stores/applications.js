@@ -149,7 +149,7 @@ export const useApplicationStore = defineStore('applications', {
       this.loading = true;
       this.error = null;
       try {
-        console.log('Submitting application with formData:', formData);
+
         const response = await jobSeekerApi.applyForJob(formData);
         
         // Add the new application to the list if successful
