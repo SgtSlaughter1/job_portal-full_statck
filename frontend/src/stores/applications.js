@@ -1,10 +1,11 @@
 // Store for managing job applications
 import { defineStore } from 'pinia';
-import api from '@/services/api';
 import { jobSeekerApi } from '@/services/api';
+import { employerApi } from '@/services/api'; // Import employerApi
 
 export const useApplicationStore = defineStore('applications', {
   state: () => ({
+    // Ensure applications is always an array
     applications: [],
     currentApplication: null,
     loading: false,
@@ -18,12 +19,19 @@ export const useApplicationStore = defineStore('applications', {
   }),
 
   getters: {
-    getApplications: (state) => state.applications,
-    getCurrentApplication: (state) => state.currentApplication,
-    isLoading: (state) => state.loading,
-    hasError: (state) => state.error,
-    getCurrentPage: (state) => state.currentPage,
-    getTotalPages: (state) => state.totalPages
+    // Getter to ensure applications is always returned as an array
+    getApplications: (state) => {
+      // If applications is an array, return it
+      // If it's an object with a data property, return that
+      // Otherwise, return an empty array
+      return Array.isArray(state.applications) 
+        ? state.applications 
+        : (state.applications?.data || []);
+    },
+    
+    // Additional getters for easy access
+    getLoadingStatus: (state) => state.loading,
+    getError: (state) => state.error
   },
 
   actions: {
@@ -32,45 +40,59 @@ export const useApplicationStore = defineStore('applications', {
       this.loading = true;
       this.error = null;
       try {
+        // Prepare pagination and filter parameters
         const params = {
           page,
-          ...filters
+          ...filters,
+          // Add default sorting or additional parameters if needed
+          sort: 'created_at',
+          order: 'desc'
         };
+
+        // Remove undefined or empty string values
+        Object.keys(params).forEach(key => 
+          (params[key] === undefined || params[key] === '') && delete params[key]
+        );
+
+        // Fetch applications with improved error handling
         const response = await jobSeekerApi.getApplications(params);
-        this.applications = response.data.data;
-        this.currentPage = response.data.meta.current_page;
-        this.totalPages = response.data.meta.last_page;
-        return response.data;
+        
+        // Normalize the response to ensure we always have an array
+        this.applications = Array.isArray(response.data) 
+          ? response.data 
+          : (response.data?.data || []);
+
+        // Update pagination information
+        this.currentPage = response.meta?.current_page || page;
+        this.totalPages = response.meta?.last_page || 1;
+
+        return this.applications;
       } catch (error) {
-        this.error = error.response?.data?.message || 'Failed to fetch applications';
+        // Detailed error logging
+        console.error('Failed to fetch applications:', error);
+        
+        // User-friendly error message
+        this.error = error.response?.data?.message 
+          || error.message 
+          || 'Failed to fetch applications. Please try again later.';
+        
+        // Set applications to an empty array to prevent errors
+        this.applications = [];
+        
+        // Re-throw to allow component-level error handling
         throw error;
       } finally {
         this.loading = false;
       }
     },
 
-    // Submit new application
-    async submitApplication(formData) {
-      this.loading = true;
-      this.error = null;
-      try {
-        const response = await jobSeekerApi.applyForJob(formData);
-        return response.data;
-      } catch (error) {
-        this.error = error.response?.data?.message || 'Failed to submit application';
-        throw error;
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    // Get application details
+    // Fetch a single application by ID
     async fetchApplicationById(id) {
       this.loading = true;
       this.error = null;
       try {
-        const response = await api.get(`/applications/${id}`);
-        this.currentApplication = response.data.data;
+        const response = await jobSeekerApi.getApplicationById(id);
+        this.currentApplication = response.data;
         return response.data;
       } catch (error) {
         this.error = error.response?.data?.message || 'Failed to fetch application details';
@@ -80,22 +102,73 @@ export const useApplicationStore = defineStore('applications', {
       }
     },
 
-    // Delete/withdraw application (job seeker only)
-    async deleteApplication(id) {
+    // Update application status
+    async updateApplicationStatus(applicationId, status, notes = '') {
       this.loading = true;
       this.error = null;
       try {
-        await jobSeekerApi.withdrawApplication(id);
-        // Remove from list if exists
-        this.applications = this.applications.filter(app => app.id !== id);
+        // Prepare data object to match backend expectations
+        const data = {
+          status,
+          notes
+        };
+
+        // Call API to update status
+        const response = await employerApi.updateApplicationStatus(applicationId, data);
+
+        // Update the application in the local store
+        const index = this.applications.findIndex(app => app.id === applicationId);
+        if (index !== -1) {
+          // Update the specific application's status
+          this.applications[index] = {
+            ...this.applications[index],
+            status,
+            employer_notes: notes
+          };
+        }
+
+        return response.data;
       } catch (error) {
-        this.error = error.response?.data?.message || 'Failed to delete application';
+        // Detailed error logging
+        console.error('Failed to update application status:', error);
+        
+        // User-friendly error message
+        this.error = error.response?.data?.message 
+          || error.message 
+          || 'Failed to update application status. Please try again later.';
+        
+        // Re-throw to allow component-level error handling
         throw error;
       } finally {
         this.loading = false;
       }
     },
-
+    
+    // Submit a new application
+    async submitApplication(formData) {
+      this.loading = true;
+      this.error = null;
+      try {
+        console.log('Submitting application with formData:', formData);
+        const response = await jobSeekerApi.applyForJob(formData);
+        
+        // Add the new application to the list if successful
+        if (response.data) {
+          this.applications = Array.isArray(this.applications)
+            ? [response.data, ...this.applications]
+            : [response.data];
+        }
+        
+        return response.data;
+      } catch (error) {
+        console.error('Failed to submit application:', error);
+        this.error = error.response?.data?.message || 'Failed to submit application';
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+    
     // Reset store state
     resetState() {
       this.applications = [];
@@ -104,10 +177,6 @@ export const useApplicationStore = defineStore('applications', {
       this.error = null;
       this.currentPage = 1;
       this.totalPages = 1;
-      this.filters = {
-        status: '',
-        jobId: null
-      };
     }
   }
 });

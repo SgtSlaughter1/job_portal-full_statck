@@ -97,7 +97,10 @@ export const employerApi = {
     
     // Applications endpoints
     getApplications: () => api.get('/applications'),
-    updateApplication: (id, data) => api.put(`/applications/${id}`, data)
+    updateApplication: (id, data) => api.put(`/applications/${id}`, data),
+    updateApplicationStatus: (applicationId, data) => {
+        return api.patch(`/applications/${applicationId}/status`, data);
+    }
 };
 
 // Job Seeker API service
@@ -110,7 +113,43 @@ export const jobSeekerApi = {
     getDashboard: () => api.get('/jobseeker/dashboard'),
     
     // Applications endpoints
-    getApplications: () => api.get('/applications'),
+    getApplications: (params = {}) => {
+        return api.get('/applications', { 
+            params,
+            // Add more configuration for error handling
+            transformResponse: [
+                (data) => {
+                    try {
+                        const parsedData = JSON.parse(data);
+                        
+                        // Log full response for debugging
+                        console.log('Applications API Response:', parsedData);
+
+                        // More detailed error checking
+                        if (parsedData.status !== 'success') {
+                            // If there's an error message, throw it
+                            throw new Error(
+                                parsedData.message || 
+                                parsedData.error_details || 
+                                'Unknown error occurred while fetching applications'
+                            );
+                        }
+
+                        return parsedData;
+                    } catch (error) {
+                        // Log the full error for debugging
+                        console.error('Full Application Fetch Error:', error);
+                        
+                        // Rethrow with a more informative message
+                        throw new Error(
+                            error.message || 
+                            'Unable to retrieve applications. Please check your connection and try again.'
+                        );
+                    }
+                }
+            ]
+        });
+    },
     applyForJob: (data) => {
         const config = {
             headers: {

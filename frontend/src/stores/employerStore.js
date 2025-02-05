@@ -1,4 +1,3 @@
-// Store for managing employer-related state and actions
 import { defineStore } from 'pinia';
 import { employerApi, jobsApi, handleApiError } from '@/services/api';
 import { useAuthStore } from '@/stores/auth';
@@ -8,35 +7,15 @@ export const useEmployerStore = defineStore('employer', {
     profile: null,
     jobs: [],
     applications: [],
-    isLoading: false,
-    error: null,
     dashboardStats: {
       totalJobs: 0,
       activeJobs: 0,
       totalApplications: 0,
       recentApplications: []
-    }
+    },
+    error: null,
+    isLoading: false
   }),
-
-  getters: {
-    // Get employer profile information
-    getProfile: (state) => state.profile,
-    
-    // Get all jobs posted by the employer
-    getJobs: (state) => state.jobs,
-    
-    // Get all applications for employer's jobs
-    getApplications: (state) => state.applications,
-    
-    // Check if data is being loaded
-    getLoadingStatus: (state) => state.isLoading,
-    
-    // Get any error messages
-    getError: (state) => state.error,
-
-    // Get all items (jobs) for the dashboard
-    getItems: (state) => state.jobs
-  },
 
   actions: {
     // Fetch employer profile data
@@ -44,8 +23,8 @@ export const useEmployerStore = defineStore('employer', {
       try {
         this.isLoading = true;
         const response = await employerApi.getProfile();
-        this.profile = response.data.data;
         this.error = null;
+        return response.data.data;
       } catch (error) {
         const { message } = handleApiError(error);
         this.error = message;
@@ -61,9 +40,8 @@ export const useEmployerStore = defineStore('employer', {
       try {
         this.isLoading = true;
         const response = await employerApi.updateProfile(profileData);
-        this.profile = response.data.data;
         this.error = null;
-        return true;
+        return response.data.data;
       } catch (error) {
         const { message } = handleApiError(error);
         this.error = message;
@@ -80,40 +58,47 @@ export const useEmployerStore = defineStore('employer', {
       
       // Check if user is authorized and is an employer
       if (!authStore.isAuthenticated || !authStore.isEmployer) {
-        this.error = 'Unauthorized access';
-        throw new Error('Unauthorized access');
+        const errorMessage = 'Unauthorized access';
+        this.error = errorMessage;
+        this.isLoading = false;
+        throw new Error(errorMessage);
       }
 
+      // Set loading state
+      this.isLoading = true;
+      this.error = null;
+
       try {
-        this.isLoading = true;
         const response = await employerApi.getDashboard();
         
         if (!response.data?.data) {
-          throw new Error('Invalid response structure from server');
+          const errorMessage = 'Invalid response structure';
+          this.error = errorMessage;
+          this.isLoading = false;
+          throw new Error(errorMessage);
         }
         
-        const { profile, jobs, applications, stats } = response.data.data;
-        
-        // Update store state
-        this.profile = profile;
-        this.jobs = jobs || [];
-        this.applications = applications || [];
+        // Update dashboard data
+        const data = response.data.data;
+        this.profile = data.profile;
+        this.jobs = data.jobs || [];
+        this.applications = data.applications || [];
         
         // Update dashboard stats
         this.dashboardStats = {
-          totalJobs: stats?.totalJobs || this.jobs.length,
-          activeJobs: stats?.activeJobs || this.jobs.filter(job => job.status === 'open').length,
-          totalApplications: stats?.totalApplications || this.applications.length,
-          recentApplications: stats?.recentApplications || this.applications
-            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-            .slice(0, 5)
+          totalJobs: data.stats?.totalJobs || this.jobs.length,
+          activeJobs: data.stats?.activeJobs || this.jobs.filter(job => job.status === 'open').length,
+          totalApplications: data.stats?.totalApplications || this.applications.length,
+          recentApplications: data.stats?.recentApplications || []
         };
 
-        this.error = null;
+        return data;
       } catch (error) {
-        const { message } = handleApiError(error);
-        this.error = message;
-        console.error('Error fetching dashboard data:', error);
+        const errorMessage = error.response?.data?.message || 
+                             error.message || 
+                             'Failed to fetch dashboard data';
+        
+        this.error = errorMessage;
         throw error;
       } finally {
         this.isLoading = false;
@@ -125,7 +110,6 @@ export const useEmployerStore = defineStore('employer', {
       try {
         this.isLoading = true;
         const response = await jobsApi.createJob(jobData);
-        this.jobs.push(response.data.data);
         this.error = null;
         return response.data.data;
       } catch (error) {
@@ -139,10 +123,12 @@ export const useEmployerStore = defineStore('employer', {
     },
 
     // Update an existing job
-    async updateJob(jobId, jobData) {
+    async updateJob({ jobId, jobData }) {
       try {
         this.isLoading = true;
         const response = await jobsApi.updateJob(jobId, jobData);
+        this.error = null;
+        
         const updatedJob = response.data.data;
         
         const index = this.jobs.findIndex(job => job.id === jobId);
@@ -150,7 +136,6 @@ export const useEmployerStore = defineStore('employer', {
           this.jobs[index] = updatedJob;
         }
         
-        this.error = null;
         return updatedJob;
       } catch (error) {
         const { message } = handleApiError(error);
@@ -166,14 +151,21 @@ export const useEmployerStore = defineStore('employer', {
     async deleteJob(jobId) {
       try {
         this.isLoading = true;
-        await jobsApi.deleteJob(jobId);
-        this.jobs = this.jobs.filter(job => job.id !== jobId);
         this.error = null;
+        
+        // Ensure the API call includes the authentication token
+        await jobsApi.deleteJob(jobId, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        // Remove the job from the store
+        this.jobs = this.jobs.filter(job => job.id !== jobId);
+        
         return true;
       } catch (error) {
-        const { message } = handleApiError(error);
-        this.error = message;
-        console.error('Error deleting job:', error);
+        this.error = error.response?.data?.message || 'Failed to delete job';
         throw error;
       } finally {
         this.isLoading = false;
@@ -181,9 +173,11 @@ export const useEmployerStore = defineStore('employer', {
     },
 
     // Handle job application
-    async handleApplication(applicationId, status) {
+    async handleApplication({ applicationId, status }) {
       try {
         this.isLoading = true;
+        this.error = null;
+        
         const response = await employerApi.updateApplication(applicationId, { status });
         
         const updatedApplication = response.data.data;
@@ -193,7 +187,6 @@ export const useEmployerStore = defineStore('employer', {
           this.applications[index] = updatedApplication;
         }
         
-        this.error = null;
         return updatedApplication;
       } catch (error) {
         const { message } = handleApiError(error);
@@ -207,17 +200,105 @@ export const useEmployerStore = defineStore('employer', {
 
     // Reset store state
     resetState() {
+      this.isLoading = false;
+      this.error = null;
       this.profile = null;
       this.jobs = [];
       this.applications = [];
-      this.isLoading = false;
-      this.error = null;
       this.dashboardStats = {
         totalJobs: 0,
         activeJobs: 0,
         totalApplications: 0,
         recentApplications: []
       };
+    },
+
+    // Fetch applications for a specific job
+    async fetchJobApplications(jobId) {
+      try {
+        this.isLoading = true;
+        
+        const response = await employerApi.getJobApplications(jobId);
+        
+        // Update applications for the specific job
+        const jobApplications = response.data?.data || [];
+        
+        // Update the applications in the store
+        this.applications = jobApplications;
+        
+        this.error = null;
+        return jobApplications;
+      } catch (error) {
+        console.error('Error fetching job applications:', error);
+        const { message } = handleApiError(error);
+        this.error = message;
+        throw error;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    // Fetch detailed application information
+    async fetchApplicationDetails(applicationId) {
+      try {
+        const response = await employerApi.getApplicationDetails(applicationId);
+        
+        if (!response.data?.data) {
+          throw new Error('No application details found');
+        }
+        
+        return response.data.data;
+      } catch (error) {
+        this.error = error.response?.data?.message || 'Failed to fetch application details';
+        throw error;
+      }
+    },
+
+    // Update application status
+    async updateApplicationStatus({ applicationId, status }) {
+      // Reset loading and error states
+      this.isLoading = true;
+      this.error = null;
+
+      try {
+        // Normalize status
+        const normalizedStatus = ['accepted', 'rejected'].includes(status) 
+          ? status 
+          : 'pending';
+
+        const response = await employerApi.updateApplication(applicationId, { status: normalizedStatus });
+        
+        const updatedApplication = response.data.data;
+        
+        // Find and update the application in the local state
+        const index = this.applications.findIndex(app => app.id === applicationId);
+        if (index !== -1) {
+          this.applications[index] = updatedApplication;
+        }
+        
+        return updatedApplication;
+      } catch (error) {
+        const errorMessage = error.response?.data?.message || 
+                             error.message || 
+                             'Failed to update application status';
+        
+        this.error = errorMessage;
+        throw error;
+      } finally {
+        this.isLoading = false;
+      }
+    }
+  },
+
+  getters: {
+    // Getter for recent applications length
+    recentApplicationsCount() {
+      return this.dashboardStats.recentApplications.length || 0;
+    },
+
+    // Getter for error message
+    errorMessage() {
+      return this.error;
     }
   }
 });

@@ -13,6 +13,7 @@ import ApplicationForm from '@/views/ApplicationForm.vue'
 import JobApplications from '@/views/JobApplications.vue'
 import PostJob from '@/views/PostJob.vue'
 import EditProfile from '@/views/EditProfile.vue'
+import ApplicationsManager from '@/views/ApplicationsManager.vue'
 
 const routes = [
   {
@@ -85,6 +86,12 @@ const routes = [
         name: 'JobApplications',
         component: JobApplications,
         meta: { userType: 'jobseeker' }
+      },
+      {
+        path: 'manage-applications',
+        name: 'ApplicationsManager',
+        component: ApplicationsManager,
+        meta: { userType: 'employer' }
       }
     ]
   },

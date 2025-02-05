@@ -45,6 +45,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/applications/{id}', [ApplicationController::class, 'show'])->name('applications.show');
     Route::put('/applications/{id}', [ApplicationController::class, 'update'])->name('applications.update');
     Route::delete('/applications/{id}', [ApplicationController::class, 'destroy'])->name('applications.destroy');
+    Route::patch('/applications/{id}/status', [ApplicationController::class, 'updateStatus'])->name('applications.updateStatus');
 
     // Employer routes
     Route::prefix('employer')->group(function () {
