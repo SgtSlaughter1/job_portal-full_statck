@@ -101,7 +101,7 @@ export const useJobSeekerStore = defineStore('jobSeeker', {
         pendingApplications: applications?.filter(app => app.status === 'pending')?.length || 0,
         acceptedApplications: applications?.filter(app => app.status === 'accepted')?.length || 0,
         rejectedApplications: applications?.filter(app => app.status === 'rejected')?.length || 0,
-        recentApplications: recentApplications || []
+        recentApplications: recentApplications.length || []
       };
     },
 
