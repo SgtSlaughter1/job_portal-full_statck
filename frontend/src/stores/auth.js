@@ -33,48 +33,37 @@ export const useAuthStore = defineStore('auth', {
     },
 
     actions: {
-        // Job seeker login
-        async jobSeekerLogin(credentials) {
+        // Unified login method for both user types
+        async login(credentials) {
             this.loading = true;
             this.error = null;
             try {
-                const response = await authApi.jobSeekerLogin(credentials);
-                const data = response.data?.data || response.data;
-                
-                if (!data?.token || !data?.job_seeker) {
-                    throw new Error('Invalid response structure from server');
+                // Try job seeker login first
+                try {
+                    const response = await authApi.jobSeekerLogin(credentials);
+                    const data = response.data?.data || response.data;
+                    
+                    if (data?.token && data?.job_seeker) {
+                        this.setAuthData(data.token, data.job_seeker, 'jobseeker');
+                        router.push({ name: 'Profile' });
+                        return data;
+                    }
+                } catch (error) {
+                    // If job seeker login fails, try employer login
+                    if (error.response?.status === 401) {
+                        const response = await authApi.employerLogin(credentials);
+                        const data = response.data?.data || response.data;
+                        
+                        if (data?.token && data?.employer) {
+                            this.setAuthData(data.token, data.employer, 'employer');
+                            router.push({ name: 'Profile' });
+                            return data;
+                        }
+                    }
+                    throw error;
                 }
                 
-                // Store essential data
-                this.setAuthData(data.token, data.job_seeker, 'jobseeker');
-                router.push({ name: 'Profile' });
-                
-                return data;
-            } catch (error) {
-                this.error = handleApiError(error);
-                throw error;
-            } finally {
-                this.loading = false;
-            }
-        },
-
-        // Employer login
-        async employerLogin(credentials) {
-            this.loading = true;
-            this.error = null;
-            try {
-                const response = await authApi.employerLogin(credentials);
-                const data = response.data?.data || response.data;
-                
-                if (!data?.token || !data?.employer) {
-                    throw new Error('Invalid response structure from server');
-                }
-                
-                // Store essential data
-                this.setAuthData(data.token, data.employer, 'employer');
-                router.push({ name: 'Profile' });
-                
-                return data;
+                throw new Error('Invalid credentials');
             } catch (error) {
                 this.error = handleApiError(error);
                 throw error;
