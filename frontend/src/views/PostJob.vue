@@ -12,11 +12,6 @@
               {{ error }}
             </div>
 
-            <!-- Success Alert -->
-            <div v-if="successMessage" class="alert alert-success" role="alert">
-              {{ successMessage }}
-            </div>
-
             <form @submit.prevent="handleSubmit">
               <!-- Job Title -->
               <div class="mb-3">
@@ -159,21 +154,36 @@
       </div>
     </div>
   </div>
+  <SuccessModal
+    :show="showSuccessModal"
+    type="job-post"
+    @close="handleSuccessModalClose"
+    @secondary-action="handlePostAnother"
+  />
 </template>
 
 <script>
 import { useEmployerStore } from '@/stores/employerStore';
 import { useAuthStore } from '@/stores/auth';
+import SuccessModal from '@/components/SuccessModal.vue';
 
 export default {
   name: 'PostJob',
-  
+  components: {
+    SuccessModal
+  },
+
   data() {
+    const employerStore = useEmployerStore();
+    const authStore = useAuthStore();
+
     return {
-      employerStore: useEmployerStore(),
+      employerStore,
+      authStore,
       error: '',
-      successMessage: '',
       isLoading: false,
+      showSuccessModal: false,
+      createdJobId: null,
       formData: {
         title: '',
         description: '',
@@ -189,36 +199,40 @@ export default {
     };
   },
 
+  // Check authentication and authorization
   created() {
-    // Check if user is authenticated and is an employer
-    const authStore = useAuthStore()
-    if (!authStore.isAuthenticated) {
-      this.$router.push({
-        path: '/auth/login',
+    if (!this.authStore.isAuthenticated) {
+      this.$router.push({ 
+        path: '/login',
         query: { redirect: '/jobs/post' }
-      })
-    } else if (!authStore.isEmployer) {
-      this.$router.push('/unauthorized')
+      });
+    } else if (!this.authStore.isEmployer) {
+      this.$router.push('/unauthorized');
     }
   },
 
   methods: {
+    // Add a new requirement field
     addRequirement() {
       this.formData.requirements.push('');
     },
 
+    // Remove a requirement field at specified index
     removeRequirement(index) {
       this.formData.requirements.splice(index, 1);
     },
 
+    // Add a new responsibility field
     addResponsibility() {
       this.formData.responsibilities.push('');
     },
 
+    // Remove a responsibility field at specified index
     removeResponsibility(index) {
       this.formData.responsibilities.splice(index, 1);
     },
 
+    // Reset form to initial state
     resetForm() {
       this.formData = {
         title: '',
@@ -232,14 +246,16 @@ export default {
         deadline: '',
         is_active: true
       };
+      this.error = '';
     },
 
+    // Handle form submission
     async handleSubmit() {
       try {
         this.isLoading = true;
         this.error = '';
-        this.successMessage = '';
 
+        // Format job data
         const jobData = {
           ...this.formData,
           requirements: this.formData.requirements.filter(req => req.trim()),
@@ -247,21 +263,30 @@ export default {
           salary: this.formData.salary ? parseInt(this.formData.salary) : null
         };
 
-        await this.employerStore.createJob(jobData);
-        
-        this.successMessage = 'Job posted successfully!';
-        this.resetForm();
-
-        // Redirect after success
-        setTimeout(() => {
-          this.$router.push('/jobs');
-        }, 2000);
+        // Create job using store
+        const response = await this.employerStore.createJob(jobData);
+        this.createdJobId = response.id;
+        this.showSuccessModal = true;
 
       } catch (err) {
-        this.error = err.message || 'Failed to post job. Please try again.';
+        this.error = err.response?.data?.message || 'Failed to create job. Please try again.';
       } finally {
         this.isLoading = false;
       }
+    },
+
+    // Handle success modal close
+    handleSuccessModalClose() {
+      this.showSuccessModal = false;
+      if (this.createdJobId) {
+        this.$router.push(`/jobs/${this.createdJobId}`);
+      }
+    },
+
+    // Handle post another job action
+    handlePostAnother() {
+      this.showSuccessModal = false;
+      this.resetForm();
     }
   }
 };
@@ -270,13 +295,28 @@ export default {
 <style scoped>
 .card {
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  border: none;
 }
 
 .form-label {
   font-weight: 500;
+  color: #495057;
 }
 
 .btn-primary {
   padding: 0.75rem;
+  font-weight: 500;
+}
+
+.btn-danger {
+  padding: 0.5rem;
+}
+
+.btn-secondary {
+  margin-top: 0.5rem;
+}
+
+.invalid-feedback {
+  font-size: 0.875rem;
 }
 </style>

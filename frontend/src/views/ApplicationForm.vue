@@ -78,11 +78,11 @@
         </div>
 
         <!-- Success Modal -->
-        <SuccessModal 
-            v-if="showSuccessModal"
+        <SuccessModal
+            :show="showSuccessModal"
+            type="job-application"
             @close="handleModalClose"
-            title="Application Submitted!"
-            message="Your application has been successfully submitted. We will review it and get back to you soon."
+            @secondary-action="handleBrowseMore"
         />
     </div>
 </template>
@@ -94,7 +94,6 @@ import { useApplicationStore } from '@/stores/applications';
 import { useAuthStore } from '@/stores/auth';
 import SuccessModal from '@/components/SuccessModal.vue';
 
-// Job application form component for submitting job applications
 export default defineComponent({
     name: 'ApplicationForm',
     
@@ -102,25 +101,20 @@ export default defineComponent({
         SuccessModal
     },
 
-    props: {
-        // Job ID for which the application is being submitted
-        id: {
-            type: String,
-            required: true
-        }
+    data() {
+        return {
+            jobStore: useJobStore(),
+            applicationStore: useApplicationStore(),
+            isLoading: true,
+            isSubmitting: false,
+            errorMessage: '',
+            showSuccessModal: false,
+            formData: {
+                cover_letter: '',
+                resume: null
+            }
+        };
     },
-
-    data: () => ({
-        // Form data for job application
-        formData: {
-            cover_letter: '',
-            resume: null,
-        },
-        showSuccessModal: false,
-        isLoading: false,
-        isSubmitting: false,
-        errorMessage: null
-    }),
 
     computed: {
         // Get current job details
@@ -148,7 +142,7 @@ export default defineComponent({
             try {
                 this.isLoading = true;
                 const jobStore = useJobStore();
-                await jobStore.fetchJobById(this.id);
+                await jobStore.fetchJobById(this.$route.params.id);
             } catch (error) {
                 this.errorMessage = error.response?.data?.message || 'Failed to load job details';
             } finally {
@@ -158,25 +152,26 @@ export default defineComponent({
 
         // Handle form submission
         async handleSubmit() {
+            if (this.isSubmitting) return;
+
             try {
                 this.isSubmitting = true;
-                this.errorMessage = null;
+                this.errorMessage = '';
 
-                // Create FormData object for file upload
+                // Create form data
                 const formData = new FormData();
-                formData.append('job_id', this.id);
                 formData.append('cover_letter', this.formData.cover_letter);
                 formData.append('resume', this.formData.resume);
+                formData.append('job_id', this.$route.params.id);
 
-                // Submit application using the store
-                const applicationStore = useApplicationStore();
-                await applicationStore.submitApplication(formData);
+                // Submit application
+                await this.applicationStore.submitApplication(formData);
                 
-                // Show success modal and reset form
+                // Show success modal
                 this.showSuccessModal = true;
-                this.resetForm();
+
             } catch (error) {
-                this.errorMessage = error.response?.data?.message || 'Failed to submit application';
+                this.errorMessage = error.message || 'Failed to submit application. Please try again.';
             } finally {
                 this.isSubmitting = false;
             }
@@ -196,10 +191,14 @@ export default defineComponent({
             }
         },
 
-        // Handle modal close and navigation
         handleModalClose() {
             this.showSuccessModal = false;
-            this.$router.push('/dashboard');
+            this.$router.push('/applications');
+        },
+
+        handleBrowseMore() {
+            this.showSuccessModal = false;
+            this.$router.push('/jobs');
         }
     }
 });
