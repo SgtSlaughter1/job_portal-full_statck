@@ -153,13 +153,13 @@
         </div>
       </div>
     </div>
-  </div>
-  <SuccessModal
+    <SuccessModal
     :show="showSuccessModal"
     type="job-post"
     @close="handleSuccessModalClose"
     @secondary-action="handlePostAnother"
   />
+  </div>
 </template>
 
 <script>

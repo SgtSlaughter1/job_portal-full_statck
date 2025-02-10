@@ -51,7 +51,8 @@
                         <div
                             class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                             <h3 class="mb-0">
-                                <i class="bi" :class="userRole === 'employer' ? 'bi-building' : 'bi-person'"></i>
+                                <i class="bi"
+                                    :class="userRole === 'employer' ? 'bi-building' : 'bi-person'"></i>
                                 {{ userRole === 'employer' ? 'Company Profile' : 'Profile' }}
                             </h3>
                             <router-link to="/profile/edit" class="btn btn-light btn-sm">
@@ -247,6 +248,9 @@
                 </div>
             </div>
         </div>
+
+        <!-- Job Details Modal -->
+        <JobDetailsModal ref="jobDetailsModal" :job="selectedJob" />
     </div>
 </template>
 
@@ -255,10 +259,14 @@ import { defineComponent } from 'vue';
 import { useEmployerStore } from '@/stores/employerStore';
 import { useJobSeekerStore } from '@/stores/jobSeekerStore';
 import { useAuthStore } from '@/stores/auth';
+import JobDetailsModal from '@/components/JobDetailsModal.vue';
 import { Modal } from 'bootstrap';
 
 export default defineComponent({
     name: 'Dashboard',
+    components: {
+        JobDetailsModal
+    },
 
     data() {
         return {
@@ -269,7 +277,8 @@ export default defineComponent({
             currentPage: 1,
             itemsPerPage: 10,
             itemToDelete: null,
-            statusOptions: ['pending', 'accepted', 'rejected', 'closed']
+            statusOptions: ['pending', 'accepted', 'rejected', 'closed'],
+            selectedJob: null
         };
     },
 
@@ -450,10 +459,10 @@ export default defineComponent({
         },
 
         viewDetails(item) {
-            const route = this.userRole === 'employer'
-                ? `/jobs/${item.id}`
-                : `/applications/${item.id}`;
-            this.$router.push(route);
+            // For employers, use the job directly
+            // For job seekers, use the job from the application
+            this.selectedJob = this.userRole === 'employer' ? item : item.job;
+            this.$refs.jobDetailsModal.show();
         },
 
         editItem(item) {
