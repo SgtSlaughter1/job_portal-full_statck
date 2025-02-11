@@ -66,40 +66,14 @@ export const useJobStore = defineStore("jobs", {
       try {
         const response = await jobsApi.getJobs({ page, ...filters });
 
-        // Check if response exists
         if (!response?.data) {
           throw new Error('Invalid response structure from server');
         }
 
-        // Handle both paginated and non-paginated responses
-        let jobsData = [];
-        let metaData = {};
-
-        if (response.data.data) {
-          // Laravel paginated response
-          jobsData = response.data.data;
-          metaData = {
-            current_page: response.data.meta?.current_page || 1,
-            last_page: response.data.meta?.last_page || 1
-          };
-        } else if (Array.isArray(response.data)) {
-          // Array response
-          jobsData = response.data;
-          metaData = {
-            current_page: 1,
-            last_page: 1
-          };
-        } else if (typeof response.data === 'object') {
-          // Single object response
-          jobsData = [response.data];
-          metaData = {
-            current_page: 1,
-            last_page: 1
-          };
-        }
-
-        // Normalize job data
-        this.jobs = jobsData.map(job => ({
+        const { data, current_page, total, last_page } = response.data;
+        
+        // Update state with paginated data
+        this.jobs = data.map(job => ({
           id: job.id,
           title: job.title || 'Untitled Position',
           description: job.description || '',
@@ -115,12 +89,11 @@ export const useJobStore = defineStore("jobs", {
           benefits: job.benefits || []
         }));
 
-        this.currentPage = metaData.current_page;
-        this.totalPages = metaData.last_page;
+        this.currentPage = current_page;
+        this.totalPages = last_page;
         this.filters = { ...this.filters, ...filters };
 
         return this.jobs;
-
       } catch (error) {
         this.error = error.message || 'Failed to fetch jobs';
         this.jobs = [];

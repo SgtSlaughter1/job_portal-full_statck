@@ -42,7 +42,7 @@
         </div>
 
         <!-- No Jobs Found -->
-        <div v-else-if="!jobStore.getFilteredJobs.length" class="text-center my-5">
+        <div v-else-if="!jobStore.getJobs.length" class="text-center my-5">
             <h3>No jobs found</h3>
             <p class="text-muted">Try adjusting your search criteria</p>
         </div>
@@ -143,7 +143,6 @@ export default {
             selectedType: '',
             selectedLocation: '',
             searchTimeout: null,
-            itemsPerPage: 9,
             currentPage: 1
         };
     },
@@ -153,18 +152,12 @@ export default {
             return Array.from(new Set(this.jobStore.getJobs.map(job => job.location)));
         },
 
-        filteredJobs() {
-            return this.jobStore.getFilteredJobs;
+        paginatedJobs() {
+            return this.jobStore.getJobs;
         },
 
         totalPages() {
-            return Math.ceil(this.filteredJobs.length / this.itemsPerPage);
-        },
-
-        paginatedJobs() {
-            const start = (this.currentPage - 1) * this.itemsPerPage;
-            const end = start + this.itemsPerPage;
-            return this.filteredJobs.slice(start, end);
+            return this.jobStore.getTotalPages;
         },
 
         displayedPages() {
@@ -240,25 +233,37 @@ export default {
         },
 
         async handleSearch() {
+            if (this.searchTimeout) {
+                clearTimeout(this.searchTimeout);
+            }
+
+            this.searchTimeout = setTimeout(async () => {
+                try {
+                    await this.jobStore.fetchJobs(1, {
+                        search: this.searchQuery,
+                        type: this.selectedType,
+                        location: this.selectedLocation
+                    });
+                    this.currentPage = 1;
+                } catch (error) {
+                    console.error('Error searching jobs:', error);
+                }
+            }, 300);
+        },
+
+        async changePage(page) {
+            if (page < 1 || page > this.totalPages) return;
+            
             try {
-                this.currentPage = 1; // Reset to first page on new search
-                await this.jobStore.fetchJobs(1, {
+                await this.jobStore.fetchJobs(page, {
                     search: this.searchQuery,
                     type: this.selectedType,
                     location: this.selectedLocation
                 });
+                this.currentPage = page;
             } catch (error) {
-                this.$toast?.error('Failed to search jobs. Please try again.');
+                console.error('Error changing page:', error);
             }
-        },
-
-        changePage(page) {
-            if (page < 1 || page > this.totalPages || page === this.currentPage) {
-                return;
-            }
-            
-            this.currentPage = page;
-            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     },
 
