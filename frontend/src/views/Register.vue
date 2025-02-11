@@ -28,7 +28,7 @@
                             
                             <!-- Error Alert -->
                             <div v-if="errors?.general" class="alert alert-danger">
-                                {{ errors.general }}
+                                {{ formatErrorMessage(errors.general) }}
                             </div>
 
                             <form @submit.prevent="handleSignup" class="needs-validation" novalidate>
@@ -76,7 +76,7 @@
                                                 :class="{ 'is-invalid': errors?.[isEmployer ? 'company_name' : 'name'] }"
                                             >
                                             <div class="invalid-feedback" v-if="errors?.[isEmployer ? 'company_name' : 'name']">
-                                                {{ errors[isEmployer ? 'company_name' : 'name'] }}
+                                                {{ formatErrorMessage(errors[isEmployer ? 'company_name' : 'name']) }}
                                             </div>
                                         </div>
                                     </div>
@@ -99,7 +99,7 @@
                                                 :class="{ 'is-invalid': errors?.email }"
                                             >
                                             <div class="invalid-feedback" v-if="errors?.email">
-                                                {{ errors.email }}
+                                                {{ formatErrorMessage(errors.email) }}
                                             </div>
                                         </div>
                                     </div>
@@ -122,7 +122,7 @@
                                                 :class="{ 'is-invalid': errors?.phone }"
                                             >
                                             <div class="invalid-feedback" v-if="errors?.phone">
-                                                {{ errors.phone }}
+                                                {{ formatErrorMessage(errors.phone) }}
                                             </div>
                                         </div>
                                     </div>
@@ -145,7 +145,7 @@
                                                 :class="{ 'is-invalid': errors?.location }"
                                             >
                                             <div class="invalid-feedback" v-if="errors?.location">
-                                                {{ errors.location }}
+                                                {{ formatErrorMessage(errors.location) }}
                                             </div>
                                         </div>
                                     </div>
@@ -173,7 +173,7 @@
                                                 </option>
                                             </select>
                                             <div class="invalid-feedback" v-if="errors?.company_size">
-                                                {{ errors.company_size }}
+                                                {{ formatErrorMessage(errors.company_size) }}
                                             </div>
                                         </div>
                                     </div>
@@ -199,7 +199,7 @@
                                                 </option>
                                             </select>
                                             <div class="invalid-feedback" v-if="errors?.industry">
-                                                {{ errors.industry }}
+                                                {{ formatErrorMessage(errors.industry) }}
                                             </div>
                                         </div>
                                     </div>
@@ -222,7 +222,7 @@
                                                 :class="{ 'is-invalid': errors?.company_description }"
                                             ></textarea>
                                             <div class="invalid-feedback" v-if="errors?.company_description">
-                                                {{ errors.company_description }}
+                                                {{ formatErrorMessage(errors.company_description) }}
                                             </div>
                                         </div>
                                     </div>
@@ -250,7 +250,7 @@
                                                 </option>
                                             </select>
                                             <div class="invalid-feedback" v-if="errors?.education_level">
-                                                {{ errors.education_level }}
+                                                {{ formatErrorMessage(errors.education_level) }}
                                             </div>
                                         </div>
                                     </div>
@@ -272,7 +272,7 @@
                                                 :class="{ 'is-invalid': errors?.years_of_experience }"
                                             >
                                             <div class="invalid-feedback" v-if="errors?.years_of_experience">
-                                                {{ errors.years_of_experience }}
+                                                {{ formatErrorMessage(errors.years_of_experience) }}
                                             </div>
                                         </div>
                                     </div>
@@ -294,7 +294,7 @@
                                                 :class="{ 'is-invalid': errors?.skills }"
                                             >
                                             <div class="invalid-feedback" v-if="errors?.skills">
-                                                {{ errors.skills }}
+                                                {{ formatErrorMessage(errors.skills) }}
                                             </div>
                                         </div>
                                     </div>
@@ -320,7 +320,7 @@
                                                 :class="{ 'is-invalid': errors?.password }"
                                             >
                                             <div class="invalid-feedback" v-if="errors?.password">
-                                                {{ errors.password }}
+                                                {{ formatErrorMessage(errors.password) }}
                                             </div>
                                         </div>
                                     </div>
@@ -343,7 +343,7 @@
                                                 :class="{ 'is-invalid': errors?.password_confirmation }"
                                             >
                                             <div class="invalid-feedback" v-if="errors?.password_confirmation">
-                                                {{ errors.password_confirmation }}
+                                                {{ formatErrorMessage(errors.password_confirmation) }}
                                             </div>
                                         </div>
                                     </div>
@@ -524,6 +524,13 @@ export default defineComponent({
                 company_description: this.formData.company_description?.trim()
             };
         },
+        // Format error message to be more user-friendly
+        formatErrorMessage(error) {
+            if (Array.isArray(error)) {
+                return error[0]; // Return just the message without brackets
+            }
+            return error;
+        },
         // Handle form submission
         async handleSignup() {
             try {
@@ -580,7 +587,7 @@ export default defineComponent({
 <style scoped>
 .register-container {
     position: relative;
-    border: 1px solid red;
+    /* border: 1px solid red; */
     overflow: hidden;
     /* min-height: 100vh; */
     background: linear-gradient(rgba(13, 110, 253, 0.3), rgba(13, 110, 253, 0.3)), url('@/assets/bg.jpg');
@@ -588,6 +595,11 @@ export default defineComponent({
     background-position: center;
     background-repeat: no-repeat;
     /* padding: 2rem 0; */
+}
+
+
+textarea.form-control {
+    resize: none;
 }
 
 .blob-container {
@@ -612,11 +624,6 @@ export default defineComponent({
     border: 1px solid green;
     /* margin: 0; */
     width: 80%;
-}
-
-.card {
-    background: rgba(255, 255, 255, 0.95) !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
 }
 
 .invalid-feedback {
