@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 class ApplicationController extends Controller
 {
     /**
-     * Display a listing of the applications 
+     * Display a listing of the applications
      */
     public function index(Request $request)
     {
@@ -45,14 +45,14 @@ class ApplicationController extends Controller
                 // Job Seeker: fetch their own applications
                 $query = $user->applications()
                     ->with([
-                        'job:id,title,employer_id', 
+                        'job:id,title,employer_id',
                         'job.employer:id,company_name'
                     ])
                     ->select([
-                        'id', 
-                        'job_id', 
-                        'status', 
-                        'cover_letter', 
+                        'id',
+                        'job_id',
+                        'status',
+                        'cover_letter',
                         'created_at'
                     ]);
             } elseif ($user instanceof \App\Models\Employer) {
@@ -61,15 +61,15 @@ class ApplicationController extends Controller
                     $q->where('employer_id', $user->id);
                 })
                 ->with([
-                    'job:id,title,employer_id', 
+                    'job:id,title,employer_id',
                     'jobSeeker:id,name,email'
                 ])
                 ->select([
-                    'id', 
-                    'job_id', 
+                    'id',
+                    'job_id',
                     'job_seeker_id',
-                    'status', 
-                    'cover_letter', 
+                    'status',
+                    'cover_letter',
                     'created_at'
                 ]);
             } else {
@@ -77,7 +77,7 @@ class ApplicationController extends Controller
                 Log::warning('Unsupported user type accessing applications', [
                     'user_type' => get_class($user)
                 ]);
-                
+
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Unauthorized access'
@@ -100,11 +100,11 @@ class ApplicationController extends Controller
             // Apply sorting if provided
             $sort = $validated['sort'] ?? 'created_at';
             $order = $validated['order'] ?? 'desc';
-            
+
             // Validate sort column to prevent SQL injection
             $allowedSortColumns = ['id', 'job_id', 'status', 'created_at'];
             $sort = in_array($sort, $allowedSortColumns) ? $sort : 'created_at';
-            
+
             $query->orderBy($sort, $order);
 
             // Paginate with custom per page setting
@@ -162,7 +162,7 @@ class ApplicationController extends Controller
                 'files' => $request->files->all(),
                 'headers' => $request->headers->all()
             ]);
-            
+
             $validator = Validator::make($request->all(), [
                 'job_id' => 'required|exists:jobs,id',
                 'cover_letter' => 'nullable|string|max:5000',
@@ -260,12 +260,12 @@ class ApplicationController extends Controller
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString()
                 ]);
-                
+
                 // Clean up the uploaded file if application creation fails
                 if (isset($resumePath)) {
                     Storage::delete($resumePath);
                 }
-                
+
                 throw $e;
             }
         } catch (\Exception $e) {
@@ -292,7 +292,7 @@ class ApplicationController extends Controller
                 ->findOrFail($id);
 
             // Check if user is authorized to view this application
-            if ($application->job_seeker_id !== Auth::id() && 
+            if ($application->job_seeker_id !== Auth::id() &&
                 $application->job->employer_id !== Auth::id()) {
                 return response()->json([
                     'status' => 'error',
@@ -373,7 +373,7 @@ class ApplicationController extends Controller
             // Validate input
             $validated = $request->validate([
                 'status' => [
-                    'required', 
+                    'required',
                     'in:accepted,rejected,pending'
                 ],
                 'notes' => 'nullable|string|max:1000'

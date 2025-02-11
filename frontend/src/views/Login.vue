@@ -1,13 +1,34 @@
 <template>
     <div class="login-container">
+        <!-- Add the SVG blob background -->
+        <div class="blob-container">
+            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class="blobBg">
+                <path
+                    fill="#0d6efd"
+                    d="M66.2,-49.1C81.5,-33.5,86.8,-6.2,79.8,15.6C72.7,37.5,53.3,53.9,30.9,65.1C8.5,76.2,-16.9,81.9,-36.2,73.3C-55.5,64.7,-68.8,41.7,-70.8,19.9C-72.8,-2,-63.6,-22.7,-49.9,-37.8C-36.2,-53,-18.1,-62.7,3.6,-65.6C25.4,-68.5,50.8,-64.6,66.2,-49.1Z"
+                    transform="translate(100 100)"
+                />
+            </svg>
+        </div>
+        
         <div class="container">
             <div class="row justify-content-center align-items-center min-vh-100">
+                <!-- Add the business image column -->
+                <div class="col-md-6 d-none d-md-block">
+                    <div class="business-image-container">
+                        <img src="@/assets/business.png" alt="Business" class="business-image">
+                    </div>
+                </div>
                 <div class="col-md-6 col-lg-5">
                     <!-- Left side - Login Form -->
                     <div class="login-card">
                         <div class="login-header text-center mb-4">
                             <h1 class="login-title">Welcome Back</h1>
                             <p class="login-subtitle">Sign in to continue to your account</p>
+                            <div class="catchphrase">
+                                <span class="highlight">Your Future Job Awaits You!</span>
+                                <div class="catchphrase-underline"></div>
+                            </div>
                         </div>
                         
                         <!-- Error Alert -->
@@ -169,15 +190,54 @@ export default {
 
 <style scoped>
 .login-container {
+    position: relative;
+    overflow: hidden;
     min-height: 100vh;
-    background: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
+    background: linear-gradient(rgba(13, 110, 253, 0.3), rgba(13, 110, 253, 0.3)), url('@/assets/bg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.blob-container {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    opacity: 0.05;
+}
+
+.blobBg {
+    width: 100%;
+    height: 100%;
+}
+
+.business-image-container {
+    position: relative;
+    z-index: 1;
+    padding: 2rem;
+}
+
+.business-image {
+    width: 90%;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+.container {
+    position: relative;
+    z-index: 1;
+    width: 90%;
 }
 
 .login-card {
-    background: #ffffff;
+    background: rgba(255, 255, 255, 0.95);
     border-radius: 16px;
-    padding: 2.5rem;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .login-header {
@@ -187,13 +247,32 @@ export default {
 .login-title {
     font-size: 2rem;
     font-weight: 700;
-    color: #1a1f36;
+    color: #0d6efd;
     margin-bottom: 0.5rem;
 }
 
 .login-subtitle {
-    color: #6b7280;
+    color: #495057;
     font-size: 1rem;
+}
+
+.catchphrase {
+    margin-top: 1rem;
+    position: relative;
+}
+
+.highlight {
+    color: #0d6efd;
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.catchphrase-underline {
+    width: 50%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #0d6efd, transparent);
+    margin: 0.5rem auto;
 }
 
 .login-form .form-floating {
