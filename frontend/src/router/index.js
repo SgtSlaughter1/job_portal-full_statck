@@ -14,12 +14,18 @@ import JobApplications from '@/views/JobApplications.vue'
 import PostJob from '@/views/PostJob.vue'
 import EditProfile from '@/views/EditProfile.vue'
 import ApplicationsManager from '@/views/ApplicationsManager.vue'
+import ForgotPassword from '@/views/ForgotPassword.vue'
 
 const routes = [
   {
     path: '/',
     name: 'Home',
     component: Home
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: ForgotPassword
   },
   {
     path: '/auth',
@@ -81,6 +87,7 @@ const routes = [
         name: 'EditProfile',
         component: EditProfile
       },
+
       {
         path: 'applications',
         name: 'JobApplications',

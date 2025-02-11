@@ -234,6 +234,34 @@ export const useAuthStore = defineStore('auth', {
             } finally {
                 this.loading = false;
             }
-        }
+        },
+
+        // Send password reset link
+        async sendPasswordResetLink(email) {
+            this.loading = true;
+            this.error = null;
+            try {
+                await authApi.sendPasswordResetLink({ email });
+            } catch (error) {
+                this.error = handleApiError(error);
+                throw error;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        // Reset password with token
+        async resetPassword(data) {
+            this.loading = true;
+            this.error = null;
+            try {
+                await authApi.resetPassword(data);
+            } catch (error) {
+                this.error = handleApiError(error);
+                throw error;
+            } finally {
+                this.loading = false;
+            }
+        },
     }
 });

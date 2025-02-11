@@ -11,17 +11,17 @@
             </svg>
         </div>
         
-        <div class="container my-5">
+        <div class="container my-3">
             <div class="row justify-content-center">
                 <div class="col-md-8">
                     <!-- Add illustration container -->
-                    <div class="illustration-container text-center mb-4">
+                    <!-- <div class="illustration-container text-center mb-4">
                         <img src="@/assets/register.png" alt="Registration Illustration" class="register-illustration">
                         <div class="illustration-text">
                             <h3 class="text-primary fw-bold">Start Your Journey</h3>
                             <p class="text-muted">Create your account and explore amazing job opportunities</p>
                         </div>
-                    </div>
+                    </div> -->
                     <div class="card border-0 shadow">
                         <div class="card-body p-4">
                             <h2 class="text-center mb-4">Create Account</h2>
@@ -580,13 +580,14 @@ export default defineComponent({
 <style scoped>
 .register-container {
     position: relative;
+    border: 1px solid red;
     overflow: hidden;
-    min-height: 100vh;
+    /* min-height: 100vh; */
     background: linear-gradient(rgba(13, 110, 253, 0.3), rgba(13, 110, 253, 0.3)), url('@/assets/bg.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    padding: 2rem 0;
+    /* padding: 2rem 0; */
 }
 
 .blob-container {
@@ -608,6 +609,9 @@ export default defineComponent({
 .container {
     position: relative;
     z-index: 1;
+    border: 1px solid green;
+    /* margin: 0; */
+    width: 80%;
 }
 
 .card {

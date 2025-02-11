@@ -93,7 +93,12 @@
                                     >
                                     <label class="form-check-label" for="remember">Remember me</label>
                                 </div>
-                                <a href="#" class="forgot-password">Forgot password?</a>
+                                <router-link 
+                                    to="/forgot-password" 
+                                    class="text-decoration-none"
+                                >
+                                    Forgot Password?
+                                </router-link>
                             </div>
 
                             <!-- Submit Button -->
