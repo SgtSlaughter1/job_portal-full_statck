@@ -10,12 +10,17 @@
                 />
             </svg>
         </div>
-        
+
+        <!-- Add the business image column -->
+    
+                    <!-- <div class="business-image-wrapper">
+                        <img src="@/assets/business.png" alt="Business" class="business-image">
+                    </div>
+         -->
         <div class="container">
             <div class="row justify-content-center align-items-center min-vh-100">
-                <!-- Add the business image column -->
                 <div class="col-md-6 d-none d-md-block">
-                    <div class="business-image-container">
+                    <div class="business-image-wrapper">
                         <img src="@/assets/business.png" alt="Business" class="business-image">
                     </div>
                 </div>
@@ -220,16 +225,21 @@ export default {
     height: 100%;
 }
 
-.business-image-container {
-    position: relative;
-    z-index: 1;
-    padding: 2rem;
+.business-image-wrapper {
+    position: absolute;
+    top: 50%;
+    left: -10%;
+    transform: translateY(-50%);
+    width: 50%;
+    max-width: 600px;
+    z-index: 0;
+    opacity: 0.7;
 }
 
 .business-image {
-    width: 90%;
-    object-fit: contain;
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+    width: 100%;
+
+
 }
 
 .container {

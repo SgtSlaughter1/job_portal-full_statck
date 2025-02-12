@@ -13,32 +13,32 @@
         
         <div class="container">
             <div class="row justify-content-center align-items-center min-vh-100">
+                <!-- Left side - Image -->
+                <div class="col-md-6 d-none d-md-block text-center">
+                    <img src="@/assets/forgot.jpg" alt="Forgot Password" class="forgot-image">
+                </div>
+
+                <!-- Right side - Form -->
                 <div class="col-md-6 col-lg-5">
                     <div class="forgot-password-card">
                         <div class="text-center mb-4">
-                            <h1 class="forgot-password-title">Forgot Password?</h1>
-                            <p class="forgot-password-subtitle">Enter your email to reset your password</p>
-                        </div>
-                        
-                        <!-- Success Alert -->
-                        <div v-if="successMessage" 
-                            class="alert alert-success alert-dismissible fade show" 
-                            role="alert"
-                        >
-                            {{ successMessage }}
-                            <button @click="successMessage = null" type="button" class="btn-close" aria-label="Close"></button>
+                            <h1 class="forgot-title">Forgot Password?</h1>
+                            <p class="forgot-subtitle">Enter your email to reset your password</p>
                         </div>
 
                         <!-- Error Alert -->
-                        <div v-if="error" 
-                            class="alert alert-danger alert-dismissible fade show" 
-                            role="alert"
-                        >
+                        <div v-if="error" class="alert alert-danger alert-dismissible fade show" role="alert">
                             {{ error }}
                             <button @click="error = null" type="button" class="btn-close" aria-label="Close"></button>
                         </div>
 
-                        <form @submit.prevent="handleSubmit" class="forgot-password-form">
+                        <!-- Success Alert -->
+                        <div v-if="successMessage" class="alert alert-success alert-dismissible fade show" role="alert">
+                            {{ successMessage }}
+                            <button @click="successMessage = null" type="button" class="btn-close" aria-label="Close"></button>
+                        </div>
+
+                        <form @submit.prevent="handleSubmit" class="forgot-form">
                             <!-- Email -->
                             <div class="form-floating mb-3">
                                 <input 
@@ -59,16 +59,16 @@
                             <!-- Submit Button -->
                             <button 
                                 type="submit" 
-                                class="btn btn-primary w-100 mb-3"
+                                class="btn btn-primary w-100 forgot-btn"
                                 :disabled="isLoading"
                             >
-                                <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                <span v-if="isLoading" class="spinner-border spinner-border-sm me-2"></span>
                                 {{ isLoading ? 'Sending...' : 'Send Reset Link' }}
                             </button>
 
                             <!-- Back to Login -->
-                            <div class="text-center">
-                                <router-link to="/auth/login" class="text-decoration-none">
+                            <div class="text-center mt-4">
+                                <router-link to="/auth/login" class="back-link">
                                     <i class="bi bi-arrow-left me-1"></i>
                                     Back to Login
                                 </router-link>
@@ -132,7 +132,34 @@ export default {
     background: linear-gradient(rgba(13, 110, 253, 0.3), rgba(13, 110, 253, 0.3)), url('@/assets/bg.jpg');
     background-size: cover;
     background-position: center;
-    padding: 2rem 0;
+    background-repeat: no-repeat;
+}
+
+.forgot-image {
+    max-width: 80%;
+    height: auto;
+    border-radius: 15px;
+    /* box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); */
+    mix-blend-mode: multiply;
+}
+
+.forgot-password-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 2.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.forgot-title {
+    color: #2c3e50;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.forgot-subtitle {
+    color: #6c757d;
+    margin-bottom: 1.5rem;
 }
 
 .blob-container {
@@ -142,42 +169,54 @@ export default {
     width: 100%;
     height: 100%;
     z-index: 0;
-    overflow: hidden;
+    pointer-events: none;
 }
 
 .blobBg {
     position: absolute;
     width: 800px;
     height: 800px;
+    right: -400px;
+    top: -400px;
     opacity: 0.1;
-    transform: translate(-30%, -30%);
+    animation: rotate 20s infinite linear;
 }
 
-.container {
-    position: relative;
-    z-index: 1;
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
-.forgot-password-card {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 1rem;
-    padding: 2rem;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+.forgot-btn {
+    padding: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.forgot-password-title {
-    color: var(--bs-primary);
-    font-weight: bold;
-    margin-bottom: 0.5rem;
+.back-link {
+    color: #0d6efd;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s ease;
 }
 
-.forgot-password-subtitle {
-    color: var(--bs-gray-600);
-    margin-bottom: 2rem;
+.back-link:hover {
+    color: #0b5ed7;
+    text-decoration: underline;
+}
+
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label {
+    color: #0d6efd;
 }
 
 .form-control:focus {
-    border-color: var(--bs-primary);
+    border-color: #0d6efd;
     box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 </style>
