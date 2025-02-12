@@ -6,13 +6,12 @@
             </div>
             <h3>{{ title }}</h3>
             <p>{{ message }}</p>
-            <div class="mt-4">
+            <div class="mt-4 d-flex justify-content-center gap-2">
                 <BaseButton @click="handleClose" variant="success">{{ buttonText }}</BaseButton>
                 <BaseButton 
                     v-if="secondaryAction"
                     @click="handleSecondaryAction" 
                     variant="outline-secondary"
-                    class="ms-2"
                 >
                     {{ secondaryButtonText }}
                 </BaseButton>

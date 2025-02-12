@@ -53,7 +53,8 @@ class ApplicationController extends Controller
                         'job_id',
                         'status',
                         'cover_letter',
-                        'created_at'
+                        'created_at',
+                        'resume_url'
                     ]);
             } elseif ($user instanceof \App\Models\Employer) {
                 // Employer: fetch applications for their jobs
@@ -62,7 +63,7 @@ class ApplicationController extends Controller
                 })
                 ->with([
                     'job:id,title,employer_id',
-                    'jobSeeker:id,name,email'
+                    'jobSeeker:id,name,email,resume_url'
                 ])
                 ->select([
                     'id',
@@ -70,7 +71,8 @@ class ApplicationController extends Controller
                     'job_seeker_id',
                     'status',
                     'cover_letter',
-                    'created_at'
+                    'created_at',
+                    'resume_url'
                 ]);
             } else {
                 // Unsupported user type

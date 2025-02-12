@@ -128,8 +128,8 @@
             <div class="row">
               <div class="col-md-6">
                 <h6 class="mb-3">Job Details</h6>
-                <p><strong>Title:</strong> {{ selectedApplication.job?.title || 'N/A' }}</p>
-                <p><strong>Company:</strong> {{ selectedApplication.job?.employer?.company_name || 'N/A' }}</p>
+                <p><strong>Job Title:</strong> {{ getApplicationDetails(selectedApplication).title }}</p>
+                <p><strong>Company:</strong> {{ getApplicationDetails(selectedApplication).company }}</p>
                 <p><strong>Industry:</strong> {{ selectedApplication.job?.employer?.industry || 'N/A' }}</p>
                 <p><strong>Location:</strong> {{ selectedApplication.job?.employer?.location || 'N/A' }}</p>
                 <p><strong>Created Date:</strong> {{ selectedApplication.job?.created_date || 'N/A' }}</p>
@@ -147,10 +147,22 @@
                 <p>{{ selectedApplication.cover_letter }}</p>
               </div>
               <div class="col-12 mt-3">
-                <h6>Resume</h6>
-                <a :href="selectedApplication.resume_url" target="_blank" class="btn btn-outline-primary">
-                  <i class="bi bi-file-earmark-pdf"></i> View Resume
-                </a>
+                <div v-if="selectedApplication.resume_url || (selectedApplication.job_seeker && selectedApplication.job_seeker.resume_url) || (selectedApplication.jobSeeker && selectedApplication.jobSeeker.resume_url)" class="mt-3">
+                  <button 
+                    @click="viewResume(selectedApplication)" 
+                    class="btn btn-outline-primary"
+                  >
+                    <i class="bi bi-file-earmark-pdf"></i> View Resume
+                  </button>
+                  <p v-if="resumeError" class="text-danger mt-2 alert alert-danger">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    {{ resumeError }}
+                  </p>
+                </div>
+                <div v-else class="mt-3 text-warning alert alert-warning">
+                  <i class="bi bi-info-circle-fill me-2"></i>
+                  No resume available for this application.
+                </div>
               </div>
             </div>
           </div>
@@ -211,7 +223,8 @@ export default defineComponent({
       currentApplication: null,
       statusToUpdate: null,
       employerNotes: '',
-      isDebug: true
+      isDebug: true,
+      resumeError: null
     };
   },
 
@@ -337,8 +350,77 @@ export default defineComponent({
       return { title: 'Unknown', company: 'Unknown' };
     },
 
+    getResumeUrl(application) {
+      // Check direct resume_url first
+      let resumeUrl = application.resume_url || 
+        application.job_seeker?.resume_url || 
+        application.jobSeeker?.resume_url;
+
+      // If URL is relative, prepend the base URL
+      if (resumeUrl && resumeUrl.startsWith('/')) {
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        resumeUrl = `${baseUrl}${resumeUrl}`;
+      }
+
+      return resumeUrl;
+    },
+
+    viewResume(application) {
+      // Reset any previous error state
+      this.resumeError = null;
+
+      // Retrieve resume URL
+      const resumeUrl = this.getResumeUrl(application);
+
+      // Validate resume URL
+      if (!resumeUrl) {
+        this.resumeError = 'No resume available for this application.';
+        console.warn('Resume URL not found');
+        return;
+      }
+
+      try {
+        // Attempt to open resume in a new tab
+        const newWindow = window.open(resumeUrl, '_blank');
+
+        // Fallback for browsers blocking window.open
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          console.warn('Direct window open failed, attempting alternative method');
+          
+          // Fetch and create blob URL as a fallback
+          fetch(resumeUrl)
+            .then(response => {
+              if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+              }
+              return response.blob();
+            })
+            .then(blob => {
+              const pdfUrl = URL.createObjectURL(blob);
+              window.open(pdfUrl, '_blank');
+            })
+            .catch(error => {
+              console.error('Resume fetch error:', error);
+              this.resumeError = 'Failed to load resume. Please try downloading manually.';
+            });
+        }
+      } catch (error) {
+        console.error('Resume view error:', error);
+        this.resumeError = 'Unable to open resume. Please contact support.';
+      }
+    },
+
     viewApplication(application) {
       this.selectedApplication = application;
+      this.resumeError = null; // Reset any previous errors
+
+      console.log('Selected Application:', JSON.parse(JSON.stringify(application)));
+      console.log('Resume URL:', 
+        application.resume_url || 
+        (application.job_seeker ? application.job_seeker.resume_url : 'Not found') ||
+        (application.jobSeeker ? application.jobSeeker.resume_url : 'Not found')
+      );
+
       if (!this.applicationModal) {
         this.applicationModal = new Modal(document.getElementById('applicationModal'));
       }
