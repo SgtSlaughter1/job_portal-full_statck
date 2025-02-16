@@ -21,7 +21,7 @@
             <div class="row justify-content-center align-items-center min-vh-100">
                 <div class="col-md-6 d-none d-md-block">
                     <div class="business-image-wrapper">
-                        <img src="@/assets/business.png" alt="Business" class="business-image">
+                        <img src="@/assets/business.png" alt="Business" class="business-image" width="75%">
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-5">
@@ -203,21 +203,24 @@ export default {
     position: relative;
     overflow: hidden;
     min-height: 100vh;
-    background: linear-gradient(rgba(13, 110, 253, 0.3), rgba(13, 110, 253, 0.3)), url('@/assets/bg.jpg');
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.1), rgba(13, 110, 253, 0.3)), url('@/assets/bg.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .blob-container {
     position: absolute;
-    top: 50%;
+    top: 0;
     left: 0;
-    transform: translateY(-50%);
     width: 100%;
     height: 100%;
     z-index: 0;
     opacity: 0.05;
+
 }
 
 .blobBg {
@@ -225,50 +228,54 @@ export default {
     height: 100%;
 }
 
-.business-image-wrapper {
-    position: absolute;
-    top: 50%;
-    left: -10%;
-    transform: translateY(-50%);
-    width: 50%;
-    max-width: 600px;
-    z-index: 0;
-    opacity: 0.7;
-}
-
-.business-image {
-    width: 100%;
-
-
-}
-
 .container {
     position: relative;
     z-index: 1;
-    width: 90%;
+    max-width: 1200px;
 }
 
 .login-card {
     background: rgba(255, 255, 255, 0.95);
-    border-radius: 16px;
-    padding: 2rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    box-shadow: 
+        0 15px 35px rgba(0, 0, 0, 0.1), 
+        0 5px 15px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.business-image-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+
+}
+
+.business-image {
+    max-width: 100%;
+
+    object-fit: contain;
 }
 
 .login-header {
-    margin-bottom: 2rem;
+    text-align: center;
+    padding: 2rem 2rem 1rem;
+ 
 }
 
 .login-title {
-    font-size: 2rem;
+    font-size: 2.5rem;
     font-weight: 700;
     color: #0d6efd;
     margin-bottom: 0.5rem;
+    letter-spacing: -1px;
 }
 
 .login-subtitle {
-    color: #495057;
+    color: #6c757d;
     font-size: 1rem;
+    margin-bottom: 1rem;
 }
 
 .catchphrase {
@@ -278,7 +285,7 @@ export default {
 
 .highlight {
     color: #0d6efd;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 600;
     letter-spacing: 0.5px;
 }
@@ -290,103 +297,83 @@ export default {
     margin: 0.5rem auto;
 }
 
-.login-form .form-floating {
-    position: relative;
+.login-form {
+    padding: 0 2rem 2rem;
+}
+
+.form-floating {
+    margin-bottom: 1.5rem;
 }
 
 .form-control {
-    border: 1.5px solid #e5e7eb;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
     padding: 1rem;
-    height: auto;
-    font-size: 1rem;
-    border-radius: 8px;
-    background-color: #f9fafb;
-    transition: all 0.2s ease;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
 }
 
 .form-control:focus {
-    background-color: #ffffff;
-    border-color: var(--bs-primary);
-    box-shadow: 0 0 0 4px rgba(var(--bs-primary-rgb), 0.1);
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    background-color: white;
 }
 
 .password-toggle {
     position: absolute;
-    right: 12px;
+    right: 15px;
     top: 50%;
     transform: translateY(-50%);
     background: none;
     border: none;
-    color: #6b7280;
-    padding: 0;
-    z-index: 4;
+    color: #6c757d;
+    z-index: 5;
+    transition: color 0.2s ease;
 }
 
 .password-toggle:hover {
-    color: var(--bs-primary);
+    color: #0d6efd;
 }
 
 .login-btn {
     padding: 0.75rem;
+    font-size: 1.1rem;
     font-weight: 600;
-    font-size: 1rem;
-    border-radius: 8px;
-    transition: all 0.2s ease;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
 }
 
-.login-btn:not(:disabled):hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(var(--bs-primary-rgb), 0.2);
-}
-
-.forgot-password {
-    color: var(--bs-primary);
-    text-decoration: none;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: color 0.2s ease;
-}
-
-.forgot-password:hover {
-    color: var(--bs-primary-dark);
-    text-decoration: underline;
+.login-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(13, 110, 253, 0.3);
 }
 
 .signup-link {
-    color: var(--bs-primary);
-    text-decoration: none;
+    color: #0d6efd;
     font-weight: 600;
+    text-decoration: none;
     transition: color 0.2s ease;
 }
 
 .signup-link:hover {
-    color: var(--bs-primary-dark);
+    color: #0a58ca;
     text-decoration: underline;
-}
-
-.form-check-input:checked {
-    background-color: var(--bs-primary);
-    border-color: var(--bs-primary);
-}
-
-.form-check-label {
-    font-size: 0.875rem;
-    color: #6b7280;
-}
-
-.alert {
-    border-radius: 8px;
-    font-size: 0.875rem;
 }
 
 @media (max-width: 768px) {
     .login-card {
-        padding: 1.5rem;
         margin: 1rem;
+        border-radius: 15px;
     }
 
     .login-title {
-        font-size: 1.75rem;
+        font-size: 2rem;
+    }
+
+    .login-form {
+        padding: 0 1.5rem 1.5rem;
     }
 }
 </style>
