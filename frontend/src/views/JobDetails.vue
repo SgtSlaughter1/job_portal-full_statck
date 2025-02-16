@@ -87,9 +87,9 @@
                             <BaseButton 
                                 @click="handleApplyClick" 
                                 class="w-100 mb-2"
-                                :disabled="jobStore.isLoading || authStore.userType === 'employer'"
+                                :disabled="isApplyDisabled"
                             >
-                                {{ getButtonText }}
+                                {{ buttonText }}
                             </BaseButton>
                             <BaseButton @click="$router.push('/jobs')" variant="outline" class="w-100">
                                 Back to Jobs
@@ -105,6 +105,7 @@
 <script>
 import { useJobStore } from '@/stores/jobs';
 import { useAuthStore } from '@/stores/auth';
+import { useApplicationStore } from '@/stores/applications';
 import BaseButton from '@/components/BaseButton.vue';
 
 export default {
@@ -112,44 +113,63 @@ export default {
     components: {
         BaseButton
     },
-    props: {
-        id: {
-            type: [Number, String],
-            required: true
-        }
-    },
 
     data() {
         return {
             jobStore: useJobStore(),
-            authStore: useAuthStore()
+            authStore: useAuthStore(),
+            applicationStore: useApplicationStore(),
+            error: null,
+            isLoading: false
         };
     },
 
     computed: {
+        // Get current job details
         job() {
             return this.jobStore.getCurrentJob;
         },
-        getButtonText() {
-            if (this.jobStore.isLoading) return 'Loading...';
+
+        // Check if user has already applied
+        hasApplied() {
+            if (!this.job?.id || !this.authStore.isAuthenticated || this.authStore.userType !== 'jobseeker') {
+                return false;
+            }
+            return this.applicationStore.hasAppliedForJob(this.job.id);
+        },
+
+        // Get button text based on state
+        buttonText() {
+            if (this.isLoading) return 'Loading...';
             if (!this.authStore.isAuthenticated) return 'Login to Apply';
             if (this.authStore.userType === 'employer') return 'Employers Cannot Apply';
+            if (this.hasApplied) return 'Already Applied';
             return 'Apply Now';
+        },
+
+        // Check if apply button should be disabled
+        isApplyDisabled() {
+            return this.isLoading || 
+                   this.authStore.userType === 'employer' || 
+                   this.hasApplied ||
+                   !this.job;
         }
     },
 
     methods: {
+        // Get CSS class for job type badge
         getJobTypeClass(type) {
             if (!type) return 'bg-secondary';
             
-            const classes = {
+            const typeClasses = {
                 'full-time': 'bg-success',
                 'part-time': 'bg-info',
                 'contract': 'bg-warning'
             };
-            return classes[type.toLowerCase()] || 'bg-secondary';
+            return typeClasses[type.toLowerCase()] || 'bg-secondary';
         },
 
+        // Format salary with currency
         formatSalary(salary) {
             if (!salary) return 'Salary not specified';
             return new Intl.NumberFormat('en-US', {
@@ -159,6 +179,7 @@ export default {
             }).format(salary);
         },
 
+        // Format date in a readable format
         formatDate(date) {
             if (!date) return 'Date not specified';
             return new Date(date).toLocaleDateString('en-US', {
@@ -168,49 +189,82 @@ export default {
             });
         },
 
-        handleApplyClick() {
-            if (!this.authStore.isAuthenticated) {
-                // Store the current URL to redirect back after login
-                const returnUrl = `/jobs/${this.id}`;
-                this.$router.push({
-                    name: 'Login',
-                    query: { 
-                        redirect: returnUrl,
-                        message: 'Please login to apply for this job'
-                    }
-                });
-                return;
-            }
+        // Handle apply button click
+        async handleApplyClick() {
+            try {
+                if (!this.authStore.isAuthenticated) {
+                    // Store current URL for redirect after login
+                    const returnUrl = `/jobs/${this.job.id}`;
+                    this.$router.push({
+                        name: 'Login',
+                        query: { 
+                            redirect: returnUrl,
+                            message: 'Please login to apply for this job'
+                        }
+                    });
+                    return;
+                }
 
-            if (this.authStore.userType !== 'jobseeker') {
-                this.$router.push({
-                    name: 'JobSeekerRegister',
-                    query: { 
-                        message: 'Please register as a job seeker to apply for jobs'
-                    }
-                });
-                return;
-            }
+                if (this.authStore.userType !== 'jobseeker') {
+                    this.$router.push({
+                        name: 'JobSeekerRegister',
+                        query: { 
+                            message: 'Please register as a job seeker to apply for jobs'
+                        }
+                    });
+                    return;
+                }
 
-            // If authenticated and is a job seeker, proceed to application
-            this.$router.push({
-                name: 'JobApplication',
-                params: { id: this.id }
-            });
+                if (this.hasApplied) {
+                    return;
+                }
+
+                // Navigate to application form
+                this.$router.push({
+                    name: 'JobApplication',
+                    params: { id: this.job.id }
+                });
+            } catch (error) {
+                console.error('Error handling apply click:', error);
+                this.error = 'Failed to process your request. Please try again.';
+            }
+        },
+
+        // Load initial data
+        async loadData() {
+            try {
+                this.isLoading = true;
+                this.error = null;
+
+                // Fetch job details
+                await this.jobStore.fetchJobById(this.$route.params.id);
+
+                // If job not found, redirect to jobs page
+                if (!this.job && !this.jobStore.isLoading) {
+                    this.$router.push('/jobs');
+                    return;
+                }
+
+                // If user is a job seeker, fetch their applications
+                if (this.authStore.isAuthenticated && this.authStore.userType === 'jobseeker') {
+                    await this.applicationStore.fetchApplications();
+                }
+            } catch (error) {
+                console.error('Error loading job details:', error);
+                this.error = 'Failed to load job details. Please try again.';
+            } finally {
+                this.isLoading = false;
+            }
         }
     },
 
-    async mounted() {
-        const jobId = this.id || this.$route.params.id;
-        if (!jobId) {
+    // Lifecycle hooks
+    async created() {
+        if (!this.$route.params.id) {
             this.$router.push('/jobs');
             return;
         }
-        
-        await this.jobStore.fetchJobById(jobId);
-        if (!this.jobStore.getCurrentJob && !this.jobStore.isLoading) {
-            this.$router.push('/jobs');
-        }
+        await this.loadData();
     },
 
     beforeUnmount() {

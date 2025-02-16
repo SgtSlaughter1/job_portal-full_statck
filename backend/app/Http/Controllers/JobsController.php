@@ -20,7 +20,7 @@ class JobsController extends Controller
             $jobs = Job::where('is_active', true)
                 ->where('deadline', '>=', now())
                 ->latest()
-                ->paginate(10);
+                ->paginate(9);
 
             return response()->json([
                 'status' => 'success',
@@ -146,7 +146,7 @@ class JobsController extends Controller
             $query->where('is_featured', true);
         }
 
-        $jobs = $query->latest()->paginate(10);
+        $jobs = $query->latest()->paginate(9);
 
         return response()->json([
             'data' => $jobs->items(),

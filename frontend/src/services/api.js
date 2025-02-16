@@ -49,6 +49,10 @@ export const authApi = {
     jobSeekerLogin: (credentials) => api.post('/jobseeker/login', credentials),
     jobSeekerRegister: (data) => api.post('/jobseeker/register', data),
     
+    // Password reset endpoints
+    sendPasswordResetLink: (data) => api.post('/password/email', data),
+    resetPassword: (data) => api.post('/password/reset', data),
+    
     // User profile endpoints - will use the correct endpoint based on user type
     getUser: () => {
         const userType = localStorage.getItem('userType');
@@ -121,9 +125,7 @@ export const jobSeekerApi = {
                 (data) => {
                     try {
                         const parsedData = JSON.parse(data);
-                        
-                        // Log full response for debugging
-                        console.log('Applications API Response:', parsedData);
+
 
                         // More detailed error checking
                         if (parsedData.status !== 'success') {

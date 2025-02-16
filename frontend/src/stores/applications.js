@@ -31,7 +31,16 @@ export const useApplicationStore = defineStore('applications', {
     
     // Additional getters for easy access
     getLoadingStatus: (state) => state.loading,
-    getError: (state) => state.error
+    getError: (state) => state.error,
+
+    // Check if user has applied for a specific job
+    hasAppliedForJob: (state) => (jobId) => {
+      const applications = Array.isArray(state.applications) 
+        ? state.applications 
+        : (state.applications?.data || []);
+      
+      return applications.some(app => app.job_id === jobId);
+    }
   },
 
   actions: {
@@ -149,7 +158,7 @@ export const useApplicationStore = defineStore('applications', {
       this.loading = true;
       this.error = null;
       try {
-        console.log('Submitting application with formData:', formData);
+
         const response = await jobSeekerApi.applyForJob(formData);
         
         // Add the new application to the list if successful

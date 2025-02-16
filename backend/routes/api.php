@@ -33,7 +33,7 @@ Route::post('/jobseeker/login', [AuthController::class, 'jobSeekerLogin']);
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
-    
+
     // Job routes
     Route::post('/jobs', [JobsController::class, 'store'])->name('jobs.store');
     Route::put('/jobs/{id}', [JobsController::class, 'update'])->name('jobs.update');
