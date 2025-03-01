@@ -14,14 +14,7 @@
         <div class="container my-3">
             <div class="row justify-content-center">
                 <div class="col-md-8">
-                    <!-- Add illustration container -->
-                    <!-- <div class="illustration-container text-center mb-4">
-                        <img src="@/assets/register.png" alt="Registration Illustration" class="register-illustration">
-                        <div class="illustration-text">
-                            <h3 class="text-primary fw-bold">Start Your Journey</h3>
-                            <p class="text-muted">Create your account and explore amazing job opportunities</p>
-                        </div>
-                    </div> -->
+
                     <div class="card border-0 shadow">
                         <div class="card-body p-4">
                             <h2 class="text-center mb-4">Create Account</h2>
@@ -32,26 +25,7 @@
                             </div>
 
                             <form @submit.prevent="handleSignup" class="needs-validation" novalidate>
-                                <!-- Registration Type
-                                <div class="btn-group mb-3">
-                                    <button 
-                                        type="button" 
-                                        class="btn btn-primary" 
-                                        :class="{ 'active': isEmployer }"
-                                        @click="switchToEmployer"
-                                    >
-                                        Employer
-                                    </button>
-                                    <button 
-                                        type="button" 
-                                        class="btn btn-primary" 
-                                        :class="{ 'active': !isEmployer }"
-                                        @click="switchToJobSeeker"
-                                    >
-                                        Job Seeker
-                                    </button>
-                                </div> -->
-
+                            
                                 <!-- Common Fields -->
                                 <div class="row g-3 mb-3">
                                     <div class="col-md-6">
