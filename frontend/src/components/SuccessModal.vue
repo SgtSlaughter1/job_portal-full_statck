@@ -1,23 +1,25 @@
 <template>
-    <div v-if="show" class="modal-overlay">
-        <div class="modal-content">
-            <div class="success-icon">
-                <i class="bi" :class="iconClass"></i>
-            </div>
-            <h3>{{ title }}</h3>
-            <p>{{ message }}</p>
-            <div class="mt-4 d-flex justify-content-center gap-2">
-                <BaseButton @click="handleClose" variant="success">{{ buttonText }}</BaseButton>
-                <BaseButton 
-                    v-if="secondaryAction"
-                    @click="handleSecondaryAction" 
-                    variant="outline-secondary"
-                >
-                    {{ secondaryButtonText }}
-                </BaseButton>
+    <transition name="modal-fade">
+        <div v-if="isVisible" class="modal-overlay">
+            <div class="modal-content">
+                <div class="success-icon">
+                    <i class="bi" :class="iconClass"></i>
+                </div>
+                <h3>{{ title }}</h3>
+                <p>{{ message }}</p>
+                <div class="mt-4 d-flex justify-content-center gap-2">
+                    <BaseButton @click="closeModal" variant="success">{{ buttonText }}</BaseButton>
+                    <BaseButton 
+                        v-if="secondaryAction"
+                        @click="handleSecondaryAction" 
+                        variant="outline-secondary"
+                    >
+                        {{ secondaryButtonText }}
+                    </BaseButton>
+                </div>
             </div>
         </div>
-    </div>
+    </transition>
 </template>
 
 <script>
@@ -47,6 +49,61 @@ export default {
                 'job-delete',
                 'application-withdraw'
             ].includes(value)
+        },
+        timeout: {
+            type: Number,
+            default: 8000 // 8 seconds
+        },
+        title: {
+            type: String,
+            default: 'Success!'
+        },
+        message: {
+            type: String,
+            default: 'Operation completed successfully.'
+        }
+    },
+    data() {
+        return {
+            isVisible: false,
+            autoCloseTimeout: null
+        };
+    },
+    watch: {
+        show(newValue) {
+            // Clear any existing timeout
+            if (this.autoCloseTimeout) {
+                clearTimeout(this.autoCloseTimeout);
+            }
+
+            // Set visibility
+            if (newValue) {
+                this.isVisible = true;
+                
+                // Set auto-close timeout
+                this.autoCloseTimeout = setTimeout(() => {
+                    this.closeModal();
+                }, this.timeout);
+            }
+        }
+    },
+    methods: {
+        closeModal() {
+            // Clear timeout
+            if (this.autoCloseTimeout) {
+                clearTimeout(this.autoCloseTimeout);
+            }
+            
+            // Hide modal
+            this.isVisible = false;
+            
+            // Emit close event
+            this.$nextTick(() => {
+                this.$emit('close');
+            });
+        },
+        handleSecondaryAction() {
+            this.$emit('secondary-action');
         }
     },
     computed: {
@@ -63,34 +120,6 @@ export default {
                 'application-withdraw': 'bi-file-earmark-x'
             };
             return icons[this.type] || 'bi-check-lg';
-        },
-        title() {
-            const titles = {
-                'register': 'Registration Successful!',
-                'employer-register': 'Employer Registration Successful!',
-                'jobseeker-register': 'Job Seeker Registration Successful!',
-                'login': 'Login Successful!',
-                'job-post': 'Job Posted Successfully!',
-                'job-application': 'Application Submitted!',
-                'profile-update': 'Profile Updated!',
-                'job-delete': 'Job Deleted Successfully',
-                'application-withdraw': 'Application Withdrawn'
-            };
-            return titles[this.type] || 'Success!';
-        },
-        message() {
-            const messages = {
-                'register': 'Your account has been created successfully.',
-                'employer-register': 'Your employer account has been created successfully. You can now post jobs and manage applications.',
-                'jobseeker-register': 'Your job seeker account has been created successfully. You can now browse and apply for jobs.',
-                'login': 'Welcome back! You have been logged in successfully.',
-                'job-post': 'Your job posting has been published and is now visible to potential candidates.',
-                'job-application': 'Your application has been submitted successfully. The employer will review it shortly.',
-                'profile-update': 'Your profile changes have been saved successfully.',
-                'job-delete': 'The job posting has been removed from the platform.',
-                'application-withdraw': 'Your application has been withdrawn successfully.'
-            };
-            return messages[this.type] || 'Operation completed successfully.';
         },
         buttonText() {
             const buttons = {
@@ -118,12 +147,10 @@ export default {
         }
     },
     emits: ['close', 'secondary-action'],
-    methods: {
-        handleClose() {
-            this.$emit('close');
-        },
-        handleSecondaryAction() {
-            this.$emit('secondary-action');
+    beforeUnmount() {
+        // Ensure timeout is cleared when component is destroyed
+        if (this.autoCloseTimeout) {
+            clearTimeout(this.autoCloseTimeout);
         }
     }
 }

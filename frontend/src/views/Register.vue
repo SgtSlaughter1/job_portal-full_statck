@@ -350,8 +350,10 @@
             <!-- Success Modal -->
             <SuccessModal 
                 :show="showSuccessModal"
-                :title="isEmployer ? 'Registration Successful!' : 'Registration Successful!'"
+                type="jobseeker-register"
+                :title="isEmployer ? 'Employer Registration Successful!' : 'Job Seeker Registration Successful!'"
                 :message="successMessage"
+                :timeout="8000"
                 @close="handleSuccessModalClose"
             />
         </div>
@@ -359,20 +361,14 @@
 </template>
 
 <script>
-import { defineComponent } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import SuccessModal from '@/components/SuccessModal.vue';
 
-export default defineComponent({
+export default {
     name: 'Register',
     components: {
         SuccessModal
-    },
-    setup() {
-        const router = useRouter();
-        const authStore = useAuthStore();
-        return { router, authStore };
     },
     data() {
         return {
@@ -402,32 +398,21 @@ export default defineComponent({
 
             // Dropdown options
             industries: [
-                'Technology',
-                'Healthcare',
-                'Finance',
-                'Education',
-                'Manufacturing',
-                'Retail',
-                'Construction',
-                'Transportation',
-                'Media',
-                'Other'
+                'Technology', 'Healthcare', 'Finance', 'Education', 'Manufacturing',
+                'Retail', 'Construction', 'Transportation', 'Media', 'Other'
             ],
             companySizes: [
-                '1-10 employees',
-                '11-50 employees',
-                '51-200 employees',
-                '201-500 employees',
-                '501+ employees'
+                '1-10 employees', '11-50 employees', '51-200 employees', 
+                '201-500 employees', '501+ employees'
             ],
             educationLevels: [
-                'High School',
-                'Associate Degree',
-                'Bachelor\'s Degree',
-                'Master\'s Degree',
-                'PhD',
-                'Other'
-            ]
+                'High School', 'Associate Degree', 'Bachelor\'s Degree', 
+                'Master\'s Degree', 'PhD', 'Other'
+            ],
+
+            // Router and store instances
+            router: null,
+            authStore: null
         };
     },
     computed: {
@@ -508,6 +493,7 @@ export default defineComponent({
         // Handle form submission
         async handleSignup() {
             try {
+                console.log('Signup process started');
                 this.errors = null;
 
                 // Format data based on registration type
@@ -515,28 +501,44 @@ export default defineComponent({
                     ? this.formatEmployerData()
                     : this.formatJobSeekerData();
 
+                console.log('Formatted registration data:', formattedData);
+
                 // Register using the appropriate store method
                 if (this.isEmployer) {
+                    console.log('Registering employer');
                     await this.authStore.registerEmployer(formattedData);
                 } else {
+                    console.log('Registering job seeker');
                     await this.authStore.registerJobSeeker(formattedData);
                 }
 
+                console.log('Registration successful, showing modal');
                 // Show success modal
                 this.showSuccessModal = true;
+                
+                // Ensure modal is triggered
+                this.$nextTick(() => {
+                    console.log('Modal should now be visible:', this.showSuccessModal);
+                });
+
                 this.resetForm();
 
             } catch (error) {
+                console.error('Registration error:', error);
+
                 // Handle validation errors
                 if (error.response?.data?.errors) {
+                    console.log('Validation errors:', error.response.data.errors);
                     this.errors = error.response.data.errors;
                 } else if (error.response?.data?.message) {
                     // Handle specific error message from backend
+                    console.log('Backend error message:', error.response.data.message);
                     this.errors = {
                         general: error.response.data.message
                     };
                 } else {
                     // Handle generic error
+                    console.log('Generic registration error');
                     this.errors = {
                         general: 'An error occurred during registration. Please try again.'
                     };
@@ -545,17 +547,24 @@ export default defineComponent({
         },
         // Handle success modal close
         handleSuccessModalClose() {
+            console.log('Register: Success modal close triggered');
             this.showSuccessModal = false;
-            this.router.push(this.isEmployer ? '/employer/dashboard' : '/jobseeker/dashboard');
-        }
+            this.$nextTick(() => {
+                this.router.push(this.isEmployer ? '/employer/dashboard' : '/jobseeker/dashboard');
+            });
+        },
     },
     created() {
+        // Initialize router and authStore
+        this.router = useRouter();
+        this.authStore = useAuthStore();
+
         // Redirect if no account type selected
         if (!this.$route.query.type) {
             this.$router.replace('/auth/account-type')
         }
     }
-});
+};
 </script>
 
 <style scoped>
