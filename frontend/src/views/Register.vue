@@ -595,7 +595,6 @@ textarea.form-control {
 .container {
     position: relative;
     z-index: 1;
-    border: 1px solid green;
     /* margin: 0; */
     width: 80%;
 }
