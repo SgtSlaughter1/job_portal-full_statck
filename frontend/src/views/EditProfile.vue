@@ -193,118 +193,119 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 
 export default {
   name: 'EditProfile',
   
-  setup() {
+  data() {
     const authStore = useAuthStore();
     const user = authStore.getUser;
-    const error = ref('');
-    const successMessage = ref('');
-    const isSubmitting = ref(false);
 
-    // Initialize form data with user data
-    const formData = ref({
-      name: user?.name || '',
-      email: user?.email || '',
-      phone: user?.phone || '',
-      address: user?.address || '',
-      bio: user?.bio || '',
-      // Job seeker specific fields
-      skills: user?.skills || '',
-      experience: user?.experience || '',
-      education: user?.education || '',
-      resume: null,
-      // Employer specific fields
-      company_name: user?.company_name || '',
-      company_website: user?.company_website || '',
-      industry: user?.industry || '',
-      company_size: user?.company_size || '',
-      company_description: user?.company_description || ''
-    });
+    return {
+      authStore,
+      error: '',
+      successMessage: '',
+      isSubmitting: false,
+      formData: {
+        name: user?.name || '',
+        email: user?.email || '',
+        phone: user?.phone || '',
+        address: user?.address || '',
+        bio: user?.bio || '',
+        // Job seeker specific fields
+        skills: user?.skills || '',
+        experience: user?.experience || '',
+        education: user?.education || '',
+        resume: null,
+        // Employer specific fields
+        company_name: user?.company_name || '',
+        company_website: user?.company_website || '',
+        industry: user?.industry || '',
+        company_size: user?.company_size || '',
+        company_description: user?.company_description || ''
+      }
+    };
+  },
 
-    // Prefill form data when component mounts
-    onMounted(async () => {
+  computed: {
+    isEmployer() {
+      return this.authStore.isEmployer;
+    },
+    isJobSeeker() {
+      return this.authStore.isJobSeeker;
+    }
+  },
+
+  mounted() {
+    this.loadUserData();
+  },
+
+  methods: {
+    async loadUserData() {
       try {
         // Fetch fresh user data
-        await authStore.fetchUser();
-        const freshUser = authStore.getUser;
+        await this.authStore.fetchUser();
+        const freshUser = this.authStore.getUser;
         
         // Update form data with fresh user data
         if (freshUser) {
-          formData.value = {
-            ...formData.value,
-            name: freshUser.name || formData.value.name,
-            email: freshUser.email || formData.value.email,
-            phone: freshUser.phone || formData.value.phone,
-            address: freshUser.address || formData.value.address,
-            bio: freshUser.bio || formData.value.bio,
+          this.formData = {
+            ...this.formData,
+            name: freshUser.name || this.formData.name,
+            email: freshUser.email || this.formData.email,
+            phone: freshUser.phone || this.formData.phone,
+            address: freshUser.address || this.formData.address,
+            bio: freshUser.bio || this.formData.bio,
             // Job seeker specific fields
-            skills: freshUser.skills || formData.value.skills,
-            experience: freshUser.experience || formData.value.experience,
-            education: freshUser.education || formData.value.education,
+            skills: freshUser.skills || this.formData.skills,
+            experience: freshUser.experience || this.formData.experience,
+            education: freshUser.education || this.formData.education,
             // Employer specific fields
-            company_name: freshUser.company_name || formData.value.company_name,
-            company_website: freshUser.company_website || formData.value.company_website,
-            industry: freshUser.industry || formData.value.industry,
-            company_size: freshUser.company_size || formData.value.company_size,
-            company_description: freshUser.company_description || formData.value.company_description
+            company_name: freshUser.company_name || this.formData.company_name,
+            company_website: freshUser.company_website || this.formData.company_website,
+            industry: freshUser.industry || this.formData.industry,
+            company_size: freshUser.company_size || this.formData.company_size,
+            company_description: freshUser.company_description || this.formData.company_description
           };
         }
       } catch (err) {
-        error.value = 'Failed to load user data';
+        this.error = 'Failed to load user data';
       }
-    });
+    },
 
-    const isEmployer = computed(() => authStore.isEmployer);
-    const isJobSeeker = computed(() => authStore.isJobSeeker);
-
-    const handleSubmit = async () => {
+    async handleSubmit() {
       try {
-        isSubmitting.value = true;
-        error.value = '';
-        successMessage.value = '';
+        this.isSubmitting = true;
+        this.error = '';
+        this.successMessage = '';
 
         // Create FormData for file upload
         const submitData = new FormData();
-        Object.keys(formData.value).forEach(key => {
-          if (formData.value[key] !== null) {
-            submitData.append(key, formData.value[key]);
+        Object.keys(this.formData).forEach(key => {
+          if (this.formData[key] !== null) {
+            submitData.append(key, this.formData[key]);
           }
         });
 
         // Update profile based on user type
-        if (isEmployer.value) {
-          await authStore.updateEmployerProfile(submitData);
+        if (this.isEmployer) {
+          await this.authStore.updateEmployerProfile(submitData);
         } else {
-          await authStore.updateJobSeekerProfile(submitData);
+          await this.authStore.updateJobSeekerProfile(submitData);
         }
 
-        successMessage.value = 'Profile updated successfully';
+        this.successMessage = 'Profile updated successfully';
       } catch (err) {
-        error.value = err.message || 'Failed to update profile';
+        this.error = err.message || 'Failed to update profile';
       } finally {
-        isSubmitting.value = false;
+        this.isSubmitting = false;
       }
-    };
+    },
 
-    const handleFileUpload = (event) => {
-      formData.value.resume = event.target.files[0];
-    };
-
-    return {
-      formData,
-      error,
-      successMessage,
-      isSubmitting,
-      isEmployer,
-      isJobSeeker,
-      handleSubmit,
-      handleFileUpload
-    };
+    handleFileUpload(event) {
+      this.formData.resume = event.target.files[0];
+    }
   }
 };
 </script>

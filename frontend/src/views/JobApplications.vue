@@ -101,85 +101,85 @@
 
 <script>
 import { useJobSeekerStore } from '@/stores/jobSeekerStore';
-import { ref, computed, onMounted } from 'vue';
 
 export default {
-  name: 'JobApplications',
-  
-  setup() {
-    const jobSeekerStore = useJobSeekerStore();
-    const selectedStatus = ref('all');
-    const sortBy = ref('newest');
-    const withdrawingId = ref(null);
+    name: 'JobApplications',
+    data() {
+        return {
+            jobSeekerStore: null,
+            selectedStatus: 'all',
+            sortBy: 'newest',
+            withdrawingId: null
+        };
+    },
+    computed: {
+        // Get applications from store
+        applications() {
+            return this.jobSeekerStore ? this.jobSeekerStore.getApplications : [];
+        },
 
-    // Get applications from store
-    const applications = computed(() => jobSeekerStore.getApplications);
+        // Filter and sort applications
+        filteredApplications() {
+            let filtered = [...this.applications];
+            
+            // Apply status filter
+            if (this.selectedStatus !== 'all') {
+                filtered = filtered.filter(app => app.status === this.selectedStatus);
+            }
+            
+            // Apply sorting
+            switch (this.sortBy) {
+                case 'newest':
+                    filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    break;
+                case 'oldest':
+                    filtered.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                    break;
+                case 'company':
+                    filtered.sort((a, b) => a.job.employer.company_name.localeCompare(b.job.employer.company_name));
+                    break;
+            }
+            
+            return filtered;
+        }
+    },
+    methods: {
+        // Get status badge class
+        getStatusBadgeClass(status) {
+            const classes = {
+                pending: 'badge bg-warning',
+                accepted: 'badge bg-success',
+                rejected: 'badge bg-danger'
+            };
+            return classes[status] || 'badge bg-secondary';
+        },
 
-    // Filter and sort applications
-    const filteredApplications = computed(() => {
-      let filtered = [...applications.value];
-      
-      // Apply status filter
-      if (selectedStatus.value !== 'all') {
-        filtered = filtered.filter(app => app.status === selectedStatus.value);
-      }
-      
-      // Apply sorting
-      switch (sortBy.value) {
-        case 'newest':
-          filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-          break;
-        case 'oldest':
-          filtered.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-          break;
-        case 'company':
-          filtered.sort((a, b) => a.job.employer.company_name.localeCompare(b.job.employer.company_name));
-          break;
-      }
-      
-      return filtered;
-    });
+        // Withdraw application
+        async withdrawApplication(applicationId) {
+            try {
+                this.withdrawingId = applicationId;
+                await this.jobSeekerStore.withdrawApplication(applicationId);
+            } catch (error) {
+                console.error('Failed to withdraw application:', error);
+            } finally {
+                this.withdrawingId = null;
+            }
+        },
 
-    // Get status badge class
-    const getStatusBadgeClass = (status) => {
-      const classes = {
-        pending: 'badge bg-warning',
-        accepted: 'badge bg-success',
-        rejected: 'badge bg-danger'
-      };
-      return classes[status] || 'badge bg-secondary';
-    };
+        // Load applications
+        async loadApplications() {
+            if (!this.applications.length) {
+                await this.jobSeekerStore.fetchDashboardData();
+            }
+        }
+    },
+    created() {
+        // Initialize store
+        this.jobSeekerStore = useJobSeekerStore();
 
-    // Withdraw application
-    const withdrawApplication = async (applicationId) => {
-      try {
-        withdrawingId.value = applicationId;
-        await jobSeekerStore.withdrawApplication(applicationId);
-      } catch (error) {
-        console.error('Failed to withdraw application:', error);
-      } finally {
-        withdrawingId.value = null;
-      }
-    };
-
-    // Load applications on mount
-    onMounted(async () => {
-      if (!applications.value.length) {
-        await jobSeekerStore.fetchDashboardData();
-      }
-    });
-
-    return {
-      jobSeekerStore,
-      applications,
-      filteredApplications,
-      selectedStatus,
-      sortBy,
-      withdrawingId,
-      getStatusBadgeClass,
-      withdrawApplication
-    };
-  }
+        // Fetch dashboard data on component creation
+        this.loadApplications();
+    }
 };
 </script>
 

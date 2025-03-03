@@ -15,7 +15,8 @@ class AuthController extends Controller
     public function employerRegister(Request $request)
     {
         $validated = $request->validate([
-            'company_name' => 'required|string|max:255',
+            'company_name' =>
+            'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:employers',
             'phone' => 'required|string|max:255',
             'company_size' => 'nullable|string|max:255',
@@ -81,7 +82,6 @@ class AuthController extends Controller
                     'token_type' => 'Bearer'
                 ]
             ]);
-
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'status' => 'error',
@@ -90,7 +90,7 @@ class AuthController extends Controller
             ], 422);
         } catch (\Exception $e) {
             Log::error('Employer Login Error: ' . $e->getMessage());
-            
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'An error occurred during login'
@@ -135,7 +135,7 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             Log::error('JobSeeker Registration Error: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
-            
+
             return response()->json([
                 'message' => 'Registration failed',
                 'error' => $e->getMessage()
@@ -154,7 +154,7 @@ class AuthController extends Controller
 
             // Find the job seeker
             $jobSeeker = JobSeeker::where('email', $validated['email'])->first();
-            
+
             // Check if user exists and password is correct
             if (!$jobSeeker || !Hash::check($validated['password'], $jobSeeker->password)) {
                 return response()->json([
@@ -174,7 +174,7 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             Log::error('JobSeeker Login Error: ' . $e->getMessage());
             Log::error($e->getTraceAsString());
-            
+
             return response()->json([
                 'message' => 'Login failed',
                 'error' => $e->getMessage()
