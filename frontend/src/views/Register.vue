@@ -353,7 +353,6 @@
                 type="jobseeker-register"
                 :title="isEmployer ? 'Employer Registration Successful!' : 'Job Seeker Registration Successful!'"
                 :message="successMessage"
-                :timeout="8000"
                 @close="handleSuccessModalClose"
             />
         </div>
@@ -547,12 +546,10 @@ export default {
         },
         // Handle success modal close
         handleSuccessModalClose() {
-            console.log('Register: Success modal close triggered');
+            console.log('Success modal closed');
             this.showSuccessModal = false;
-            this.$nextTick(() => {
-                this.router.push(this.isEmployer ? '/employer/dashboard' : '/jobseeker/dashboard');
-            });
-        },
+            this.router.push(this.isEmployer ? '/employer/dashboard' : '/jobseeker/dashboard');
+        }
     },
     created() {
         // Initialize router and authStore

@@ -198,21 +198,15 @@
 </template>
 
 <script>
-import { defineComponent } from 'vue';
 import { useApplicationStore } from '@/stores/applications';
-import { mapActions, mapState, mapGetters } from 'pinia';
-import { Modal } from 'bootstrap'
+import { Modal } from 'bootstrap';
 
-export default defineComponent({
+export default {
   name: 'ApplicationsManager',
   
-  setup() {
-    const applicationStore = useApplicationStore();
-    return { applicationStore };
-  },
-
   data() {
     return {
+      applicationStore: null,
       searchQuery: '',
       currentPage: 1,
       itemsPerPage: 10,
@@ -224,7 +218,9 @@ export default defineComponent({
       statusToUpdate: null,
       employerNotes: '',
       isDebug: true,
-      resumeError: null
+      resumeError: null,
+      loading: false,
+      error: null
     };
   },
 
@@ -232,14 +228,6 @@ export default defineComponent({
     store() {
       return this.applicationStore;
     },
-
-    ...mapState(useApplicationStore, [
-      'loading',
-      'error'
-    ]),
-    ...mapGetters(useApplicationStore, [
-      'getApplications'
-    ]),
 
     applications() {
       const apps = this.store.applications;
@@ -283,18 +271,16 @@ export default defineComponent({
   },
 
   methods: {
-    ...mapActions(useApplicationStore, ['fetchApplications']),
-
     async loadApplications() {
       try {
-        this.store.error = null;
+        this.error = null;
 
         await this.store.fetchApplications(this.currentPage, {
           status: this.statusFilter,
           search: this.searchQuery
         });
       } catch (error) {
-        this.store.error = error.message || 'Failed to load applications. Please try again.';
+        this.error = error.message || 'Failed to load applications. Please try again.';
         console.error('Applications load error:', error);
       }
     },
@@ -481,62 +467,20 @@ export default defineComponent({
         // Show error message
         this.$toast.error(error.message || 'Failed to update application status');
       }
-    },
+    }
+  },
 
-    async applyForJob(jobId) {
-      try {
-        this.loading = true;
-        this.error = null;
-
-        // Create FormData object
-        const formData = new FormData();
-        formData.append('job_id', jobId);
-        
-        // Add cover letter if provided
-        if (this.coverLetter) {
-          formData.append('cover_letter', this.coverLetter);
-        }
-        
-        // Add resume file
-        if (this.resumeFile) {
-          formData.append('resume', this.resumeFile);
-        } else {
-          throw new Error('Please select a resume file');
-        }
-
-        // Submit application
-        const response = await jobSeekerApi.applyForJob(formData);
-        
-        // Show success message
-        this.$toast.success('Application submitted successfully');
-        
-        // Refresh applications list
-        await this.fetchApplications();
-        
-        return response.data;
-      } catch (error) {
-        console.error('Application submission failed:', error);
-        
-        // Show error message
-        const errorMessage = error.response?.data?.message 
-          || error.message 
-          || 'Failed to submit application';
-          
-        this.$toast.error(errorMessage);
-        this.error = errorMessage;
-        
-        throw error;
-      } finally {
-        this.loading = false;
-      }
-    },
+  created() {
+    // Initialize store
+    this.applicationStore = useApplicationStore();
   },
 
   mounted() {
+    // Load applications on mount
     this.loadApplications();
     this.applicationModal = new Modal(document.getElementById('applicationModal'));
   }
-});
+};
 </script>
 
 <style scoped>
